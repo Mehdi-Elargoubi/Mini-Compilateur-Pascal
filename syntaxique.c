@@ -3,566 +3,759 @@
 #include <string.h>
 #include <ctype.h>
 
-// Définition des tailles de tableaux
-#define TABLEINDEX 100
-#define TAILLEMEM 100
-#define TAILLECODE 100
-
-// Définition des mnémoniques pour les instructions
 typedef enum
 {
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    EQL,
-    NEQ,
-    GTR,
-    LSS,
-    GEQ,
-    LEQ,
-    PRN,
-    INN,
-    INT,
-    LDI,
-    LDA,
-    LDV,
-    STO,
-    BRN,
-    BZE,
-    HLT,
+    ID_TOKEN,
+    PROGRAM_TOKEN,
+    CONST_TOKEN,
+    VAR_TOKEN,
+    BEGIN_TOKEN,
+    END_TOKEN,
+    IF_TOKEN,
+    THEN_TOKEN,
+    WHILE_TOKEN,
+    DO_TOKEN,
+    READ_TOKEN,
+    WRITE_TOKEN,
+    PV_TOKEN,
+    PT_TOKEN,
+    PLUS_TOKEN,
+    MOINS_TOKEN,
+    MULT_TOKEN,
+    DIV_TOKEN,
+    VIR_TOKEN,
+    AFF_TOKEN,
+    INF_TOKEN,
+    INFEG_TOKEN,
+    SUP_TOKEN,
+    SUPEG_TOKEN,
+    DIFF_TOKEN,
+    PO_TOKEN,
+    PF_TOKEN,
+    FIN_TOKEN,
     NUM_TOKEN,
-    EOF_TOKEN
-} MNEMONIQUES;
+    ERREUR_TOKEN,
+    EOF_TOKEN,
+    EG_TOKEN,REPEAT_TOKEN,UNTIL_TOKEN,FOR_TOKEN,ELSE_TOKEN,CASE_TOKEN,OF_TOKEN,
+    INTO_TOKEN,DOWNTO_TOKEN,
+    DDOT_TOKEN
+} CODES_LEX;
 
-// Définition des types d'erreurs possibles
+// erreur types
 typedef enum
 {
-    INT_ERR,
-    HLT_ERR,
-    INST_ERR,
-    NUM_TOKEN_ERR
-} MNEMONIQUES_ERR;
+    ID_ERR,
+    PROGRAM_ERR,
+    CONST_ERR,
+    VAR_ERR,
+    BEGIN_ERR,
+    END_ERR,
+    IF_ERR,
+    THEN_ERR,
+    WHILE_ERR,
+    DO_ERR,
+    READ_ERR,
+    WRITE_ERR,
+    PV_ERR,
+    PT_ERR,
+    PLUS_ERR,
+    MOINS_ERR,
+    MULT_ERR,
+    DIV_ERR,
+    VIR_ERR,
+    AFF_ERR,
+    INF_ERR,
+    INFEG_ERR,
+    SUP_ERR,
+    SUPEG_ERR,
+    DIFF_ERR,
+    PO_ERR,
+    PF_ERR,
+    FIN_ERR,
+    NUM_ERR,
+    ERREUR_ERR,
+    EOF_ERR,
+    EG_ERR,
+    CONST_VAR_BEGIN_ERR,
+    VAR_BEGIN_ERR,REPEAT_ERR,UNTIL_ERR,FOR_ERR,ELSE_ERR,CASE_ERR,OF_ERR,
+    INTO_ERR,DOWNTO_ERR,DDOT_ERR
+} CODES_ERR;
 
-// Fonction pour obtenir une chaîne de caractères correspondant à un code d'erreur
-const char *get_error_string(MNEMONIQUES_ERR error_code)
-{
-    switch (error_code)
-    {
-    case INT_ERR:
-        return "Error: INT is missing in the beginning of the program";
-    case HLT_ERR:
-        return "Error: HLT is missing in the program";
-    case INST_ERR:
-        return "Error: Invalid instruction";
-    case NUM_TOKEN_ERR:
-        return "Error: Invalid number";
-    default:
-        return "Error: Unknown error";
-    }
-}
-
-// Structure représentant un symbole courant
 typedef struct
 {
-    MNEMONIQUES CODE;
+    CODES_LEX CODE;
     char NOM[20];
     int val;
 } TSym_Cour;
 
-// Variables globales
 TSym_Cour head;
 TSym_Cour SYM_COUR;
-FILE *fichier;
-char Car_Cour; // Caractère actuel
-int IND_DER_SYM_ACC = 0; // Index dans TABLESYM
-int OFFSET = -1;
-int MEM[TAILLEMEM]; // Mémoire (Pile de la machine)
-int SP; // Pointeur vers le sommet du pile
 
-// Structure représentant une instruction P-code
-typedef struct
-{
-    MNEMONIQUES MNE;
-    int SUITE;
-} INSTRUCTION;
+FILE * fichier;
 
-// Variables globales
-int LABEL_BRN;
-int INDICE_BZE;
-int IND_BZE;
-int PC = 0; // Compteur d'instructions
-int opRELOP = 0;
-int opMULOP = 0;
-int opADDOP = 0;
-int opLoop = 0;
+char Car_Cour; // caractère courant
 
-// Déclaration des fonctions
-void INTER_INST(INSTRUCTION INST);
+// Prototypes des fonctions à utiliser
+void VARS();
+void INSTS();
+void INST();
+void AFFEC();
+void SI();
+void TANTQUE();
+void ECRIRE();
+void LIRE();
+void EXPR();
+void TERM();
+void FACT();
+void MULOP();
+void ADDOP();
+void RELOP();
+void COND();
 void Lire_Car();
-void Erreur(MNEMONIQUES_ERR code);
-void Test_Symbole(MNEMONIQUES cl, MNEMONIQUES_ERR COD_ERR);
-void PCODE();
-void INST_PCODE();
+void Erreur(CODES_ERR code);
+void Test_Symbole(CODES_LEX cl, CODES_ERR COD_ERR);
+void PROGRAM();
+void BLOCK();
+void CONSTS();
+void Sym_Suiv();
 void lire_mot();
 void lire_nombre();
-void Sym_Suiv();
+void CAS();
+void POUR();
+void REPETER();
 
-// Fonction pour interpréter une instruction P-code
-void INTER_INST(INSTRUCTION INST)
-{
-    int val1, adr, val2;
-    switch (INST.MNE)
-    {
-    case INT:
-        OFFSET = SP = INST.SUITE;
-        PC++;
-        break;
-    case LDI:
-        MEM[++SP] = INST.SUITE;
-        PC++;
-        break;
-    case LDA:
-        MEM[++SP] = INST.SUITE;
-        PC++;
-        break;
-    case STO:
-        val1 = MEM[SP--];
-        adr = MEM[SP--];
-        MEM[adr] = val1;
-        PC++;
-        break;
-    case LDV:
-        adr = MEM[SP--];
-        MEM[++SP] = MEM[adr];
-        PC++;
-        break;
-    case EQL:
-        val1 = MEM[SP--];
-        val2 = MEM[SP--];
-        MEM[++SP] = (val1 == val2);
-        PC++;
-        break;
-    case LEQ:
-        val2 = MEM[SP--];
-        val1 = MEM[SP--];
-        MEM[++SP] = (val1 <= val2);
-        PC++;
-        break;
-    case GEQ:
-        val2 = MEM[SP--];
-        val1 = MEM[SP--];
-        MEM[++SP] = (val1 >= val2);
-        PC++;
-        break;
-    case LSS:
-        val2 = MEM[SP--];
-        val1 = MEM[SP--];
-        MEM[++SP] = (val1 < val2);
-        PC++;
-        break;
-    case GTR:
-        val2 = MEM[SP--];
-        val1 = MEM[SP--];
-        MEM[++SP] = (val1 > val2);
-        PC++;
-        break;
-    case NEQ:
-        val2 = MEM[SP--];
-        val1 = MEM[SP--];
-        MEM[++SP] = (val1 != val2);
-        PC++;
-        break;
-    case INN:
-        scanf("%d", MEM[SP--]);
-        PC++;
-        break;
-    case BZE:
-        if (MEM[SP--] == 0)
-            PC = INST.SUITE;
-        else
-            PC++;
-        break;
-    case BRN:
-        PC = INST.SUITE;
-        break;
-    case HLT:
-        PC++;
-        break;
-    case ADD:
-        val1 = MEM[SP--];
-        val2 = MEM[SP--];
-        MEM[++SP] = val1 + val2;
-        PC++;
-        break;
-    case SUB:
-        val1 = MEM[SP--];
-        val2 = MEM[SP--];
-        MEM[++SP] = val1 - val2;
-        PC++;
-        break;
-    case MUL:   
-        val1 = MEM[SP--];
-        val2 = MEM[SP--];
-        MEM[++SP] = val1 * val2;
-        PC++;
-        break;
-    case DIV:
-        val1 = MEM[SP--];
-        val2 = MEM[SP--];
-        MEM[++SP] = val1 / val2;
-        PC++;
-        break;
-    case PRN:
-        printf("%d\n", MEM[SP--]);
-        PC++;
-        break;
-    } 
-}
+// Definition des fonctions à utiliser
 
-// Fonction principale pour interpréter le code P-code
-void PCODE()
-{
-    Test_Symbole(INT, INT_ERR);
-    Test_Symbole(NUM_TOKEN, NUM_TOKEN_ERR);
-    INST_PCODE();
-    Test_Symbole(HLT, HLT_ERR);
-}
-
-// Fonction pour interpréter les instructions P-code
-void INST_PCODE()
-{
-    INSTRUCTION INST;
-    while (SYM_COUR.CODE != HLT && SYM_COUR.CODE != EOF_TOKEN)
-    {
-        if (SYM_COUR.CODE == NUM_TOKEN && strcmp(SYM_COUR.NOM, "EOF") == 0)
-        {
-            Erreur(HLT_ERR); // Le fichier ne contient pas l'instruction HLT
-            break;
-        }
-        switch (SYM_COUR.CODE)
-        {
-        case MUL:
-            INST.MNE = MUL;
-            INTER_INST(INST);
-            Sym_Suiv();
-            break;
-        case DIV:
-            INST.MNE = DIV;
-            INTER_INST(INST);
-            Sym_Suiv();
-            break;
-        case SUB:
-            INST.MNE = SUB;
-            INTER_INST(INST);
-            Sym_Suiv();
-            break;
-        case ADD:
-            INST.MNE = ADD;
-            INTER_INST(INST);
-            Sym_Suiv();
-            break;
-        case EQL:
-            INST.MNE = EQL;
-            INTER_INST(INST);
-            Sym_Suiv();
-            break;
-        case NEQ:
-            INST.MNE = NEQ;
-            INTER_INST(INST);
-            Sym_Suiv();
-            break;
-        case GTR:
-            INST.MNE = GTR;
-            INTER_INST(INST);
-            Sym_Suiv();
-            break;
-        case LSS:
-            INST.MNE = LSS;
-            INTER_INST(INST);
-            Sym_Suiv();
-            break;
-        case GEQ:
-            INST.MNE = GEQ;
-            INTER_INST(INST);
-            Sym_Suiv();
-            break;
-        case LEQ:
-            INST.MNE = LEQ;
-            INTER_INST(INST);
-            Sym_Suiv();
-            break;
-        case PRN:
-            INST.MNE = PRN;
-            INTER_INST(INST);
-            Sym_Suiv();
-            break;
-        case INN:
-            INST.MNE = INN;
-            INTER_INST(INST);
-            Sym_Suiv();
-            break;
-        case INT:
-            Sym_Suiv();
-            INST.MNE = INT;
-            INST.SUITE = SYM_COUR.val;
-            INTER_INST(INST);
-            Test_Symbole(SYM_COUR.CODE, NUM_TOKEN);
-            break;
-        case LDI:
-            Sym_Suiv();
-            INST.MNE = LDI;
-            INST.SUITE = SYM_COUR.val;
-            INTER_INST(INST);
-            Test_Symbole(SYM_COUR.CODE, NUM_TOKEN);
-            break;
-        case LDA:
-            Sym_Suiv();
-            INST.MNE = LDA;
-            INST.SUITE = SYM_COUR.val;
-            INTER_INST(INST);
-            Test_Symbole(SYM_COUR.CODE, NUM_TOKEN);
-            break;
-        case LDV:
-            INST.MNE = LDV;
-            INTER_INST(INST);
-            Sym_Suiv();
-            break;
-        case STO:
-            INST.MNE = STO;
-            INTER_INST(INST);
-            Sym_Suiv();
-            break;
-        case BRN:
-            Sym_Suiv();
-            INST.MNE = BRN;
-            INST.SUITE = SYM_COUR.val;
-            INTER_INST(INST);
-            Test_Symbole(SYM_COUR.CODE, NUM_TOKEN);
-            break;
-        case BZE:
-            Sym_Suiv();
-            INST.MNE = BZE;
-            INST.SUITE = SYM_COUR.val;
-            INTER_INST(INST);
-            Test_Symbole(SYM_COUR.CODE, NUM_TOKEN);
-            break;
-        default:
-            Erreur(INST_ERR);
-        }
-    }
-}
-
-// Fonction principale
-int main()
-{
-    fichier = fopen("C:/Users/HP/Desktop/Mini-Compilateur-Pascal/test.p", "r");
-    if (fichier == NULL)
-    {
-        perror("Erreur lors de l'ouverture du fichier!");
-        return 1;
-    }
-    Lire_Car();
-    Sym_Suiv();
-
-    PCODE();
-
-    printf("P-code parfait.\n");
-    fclose(fichier);
-    return 0;
-}
-// Définition des fonctions
-
-// Fonction pour lire un mot du fichier source
 void lire_mot()
 {
-    char mot[20]; // Tableau pour stocker le mot lu
-    int indice = 0; // Indice pour parcourir le mot
+    char mot[20];
+    int indice = 0;
 
     // Lecture du premier caractère (lettre)
     mot[indice++] = Car_Cour;
-    Lire_Car(); // Lire le caractère suivant
+    Lire_Car();
 
     // Lecture des caractères suivants (lettres ou chiffres)
     while (isalpha(Car_Cour) || isdigit(Car_Cour))
     {
         mot[indice++] = Car_Cour;
-        Lire_Car(); // Lire le caractère suivant
+        Lire_Car();
     }
 
-    // Ajout du terminateur de chaîne
+    // Ajout du caractère de fin de chaîne
     mot[indice] = '\0';
 
-    // Vérification si le mot est un mot-clé et assignation du code correspondant
-    // Stockage du mot dans le token
-    if (stricmp(mot, "add") == 0)
+    // Vérifier si le mot est un mot-clé
+    if (stricmp(mot, "program") == 0)
     {
-        SYM_COUR.CODE = ADD;
+        SYM_COUR.CODE = PROGRAM_TOKEN;
     }
-    else if (stricmp(mot, "sub") == 0)
+    else if (stricmp(mot, "const") == 0)
     {
-        SYM_COUR.CODE = SUB;
+        SYM_COUR.CODE = CONST_TOKEN;
     }
-    // ... (répéter pour chaque mot-clé)
+    else if (stricmp(mot, "var") == 0)
+    {
+        SYM_COUR.CODE = VAR_TOKEN;
+    }
+    else if (stricmp(mot, "begin") == 0)
+    {
+        SYM_COUR.CODE = BEGIN_TOKEN;
+    }
+    else if (stricmp(mot, "end") == 0)
+    {
+        SYM_COUR.CODE = END_TOKEN;
+    }
+    else if (stricmp(mot, "if") == 0)
+    {
+        SYM_COUR.CODE = IF_TOKEN;
+    }
+    else if (stricmp(mot, "then") == 0)
+    {
+        SYM_COUR.CODE = THEN_TOKEN;
+    }
+    else if (stricmp(mot, "while") == 0)
+    {
+        SYM_COUR.CODE = WHILE_TOKEN;
+    }
+    else if (stricmp(mot, "do") == 0)
+    {
+        SYM_COUR.CODE = DO_TOKEN;
+    }
+    else if (stricmp(mot, "read") == 0)
+    {
+        SYM_COUR.CODE = READ_TOKEN;
+    }
+    else if (stricmp(mot, "write") == 0)
+    {
+        SYM_COUR.CODE = WRITE_TOKEN;
+    }
+    else if (stricmp(mot, "else") == 0)
+    {
+        SYM_COUR.CODE = ELSE_TOKEN;
+    }
+    else if (stricmp(mot, "repeat") == 0)
+    {
+        SYM_COUR.CODE = REPEAT_TOKEN;
+    }
+    else if (stricmp(mot, "until") == 0)
+    {
+        SYM_COUR.CODE = UNTIL_TOKEN;
+    }
+    else if (stricmp(mot, "for") == 0)
+    {
+        SYM_COUR.CODE = FOR_TOKEN;
+    }
+    else if (stricmp(mot, "case") == 0)
+    {
+        SYM_COUR.CODE = CASE_TOKEN;
+    }
+    else if (stricmp(mot, "of") == 0)
+    {
+        SYM_COUR.CODE = OF_TOKEN;
+    }
+    else
+    {
+        // Si ce n'est pas un mot-clé, c'est un identifiant
+        SYM_COUR.CODE = ID_TOKEN;
+    }
 
+    // Stockage du mot dans le jeton
     strcpy(SYM_COUR.NOM, mot);
 }
 
-// Fonction pour lire un nombre du fichier source
 void lire_nombre()
 {
-    char nombre[11]; // Tableau pour stocker le nombre lu
-    int indice = 0; // Indice pour parcourir le nombre
+    char nombre[11];
+    int indice = 0;
 
     // Lecture du premier chiffre
     nombre[indice++] = Car_Cour;
-    Lire_Car(); // Lire le caractère suivant
+    Lire_Car();
 
     // Lecture des chiffres suivants
     while (isdigit(Car_Cour))
     {
         nombre[indice++] = Car_Cour;
-        Lire_Car(); // Lire le caractère suivant
+        Lire_Car();
     }
 
-    // Ajout du terminateur de chaîne
+    // Ajout du caractère de fin de chaîne
     nombre[indice] = '\0';
 
-    // Stockage du nombre dans le token
+    // Stockage du nombre dans le jeton
     SYM_COUR.CODE = NUM_TOKEN;
     strcpy(SYM_COUR.NOM, nombre);
-    SYM_COUR.val = atoi(SYM_COUR.NOM); // Conversion du nombre en entier
+    SYM_COUR.val = atoi(SYM_COUR.NOM);
 }
 
-// Fonction pour passer au prochain symbole du fichier source
 void Sym_Suiv()
 {
-    // Ignorer les espaces, les sauts de ligne et les tabulations
     while (Car_Cour == ' ' || Car_Cour == '\n' || Car_Cour == '\t')
     {
         Lire_Car();
     }
-
-    // Identifier le type de symbole suivant et appeler la fonction correspondante
-    if (isdigit(Car_Cour))
-    {
-        lire_nombre();
-    }
-    else if (isalpha(Car_Cour))
+    if (isalpha(Car_Cour))
     {
         lire_mot();
+    }
+    else if (isdigit(Car_Cour))
+    {
+        lire_nombre();
     }
     else
     {
         switch (Car_Cour)
         {
-        case EOF:
-            SYM_COUR.CODE = EOF_TOKEN;
+        case ';':
+            SYM_COUR.CODE = PV_TOKEN;
+            Lire_Car();
             break;
+
+        case '+':
+            SYM_COUR.CODE = PLUS_TOKEN;
+            Lire_Car();
+            break;
+
+        case '-':
+            SYM_COUR.CODE = MOINS_TOKEN;
+            Lire_Car();
+            break;
+
+        case '*':
+            SYM_COUR.CODE = MULT_TOKEN;
+            Lire_Car();
+            break;
+
+        case '/':
+            SYM_COUR.CODE = DIV_TOKEN;
+            Lire_Car();
+            break;
+
+        case ',':
+            SYM_COUR.CODE = VIR_TOKEN;
+            Lire_Car();
+            break;
+
+        case ':':
+            Lire_Car();
+            if (Car_Cour == '=')
+            {
+                SYM_COUR.CODE = AFF_TOKEN;
+                Lire_Car();
+            }
+            else
+            {
+                SYM_COUR.CODE = DDOT_TOKEN;
+            }
+            break;
+
+        case '<':
+            Lire_Car();
+            if (Car_Cour == '=')
+            {
+                SYM_COUR.CODE = INFEG_TOKEN;
+                Lire_Car();
+            }
+            else if (Car_Cour == '>')
+            {
+                SYM_COUR.CODE = DIFF_TOKEN;
+                Lire_Car();
+            }
+            else
+            {
+                SYM_COUR.CODE = INF_TOKEN;
+            }
+            break;
+
+        case '>':
+            Lire_Car();
+            if (Car_Cour == '=')
+            {
+                SYM_COUR.CODE = SUPEG_TOKEN;
+                Lire_Car();
+            }
+            else
+            {
+                SYM_COUR.CODE = SUP_TOKEN;
+            }
+            break;
+
+        case '(':
+            SYM_COUR.CODE = PO_TOKEN;
+            Lire_Car();
+            break;
+        case '=':
+            SYM_COUR.CODE = EG_TOKEN;
+            Lire_Car();
+            break;
+
+        case ')':
+            SYM_COUR.CODE = PF_TOKEN;
+            Lire_Car();
+            break;
+
+        case '.':
+            SYM_COUR.CODE = PT_TOKEN;
+            Lire_Car();
+            break;
+
+        case EOF:
+            SYM_COUR.CODE = FIN_TOKEN;
+            break;
+
         default:
-            SYM_COUR.CODE = INST_ERR;
-            Lire_Car(); // Passer au caractère suivant
+            SYM_COUR.CODE = ERREUR_TOKEN;
+            Lire_Car();
         }
+        strcpy(SYM_COUR.NOM , &Car_Cour);
     }
+
+    //printf("Symbol: %s\n", SYM_COUR.NOM);
 }
 
-// Fonction pour lire le caractère suivant du fichier source
 void Lire_Car()
 {
     Car_Cour = fgetc(fichier);
 }
 
-// Fonction pour afficher les erreurs
-void Erreur(MNEMONIQUES_ERR code)
+void Erreur(CODES_ERR code)
 {
-    printf("%s\n", get_error_string(code));
+    printf("Erreur: %d\n", code);
+    printf("Current Token: %d\n", SYM_COUR.CODE);
+    printf("Current Lexeme: %s\n", SYM_COUR.NOM);
     exit(EXIT_FAILURE);
 }
-// Définition des fonctions
 
-// Fonction pour tester si le symbole courant correspond à celui attendu
-void Test_Symbole(MNEMONIQUES cl, MNEMONIQUES_ERR COD_ERR)
+void Test_Symbole(CODES_LEX cl, CODES_ERR COD_ERR)
 {
     if (SYM_COUR.CODE == cl)
     {
-        Sym_Suiv(); // Passer au symbole suivant
+        Sym_Suiv();
+    }
+    else
+        Erreur(COD_ERR);
+}
+
+void PROGRAM()
+{
+    Test_Symbole(PROGRAM_TOKEN, PROGRAM_ERR);
+    Test_Symbole(ID_TOKEN, ID_ERR);
+    Test_Symbole(PV_TOKEN, PV_ERR);
+    BLOCK();
+    Test_Symbole(PT_TOKEN, PT_ERR);
+
+}
+
+void BLOCK()
+{
+    CONSTS();
+
+    VARS();
+    INSTS();
+}
+
+void CONSTS()
+{
+    switch (SYM_COUR.CODE)
+    {
+    case CONST_TOKEN:
+        Sym_Suiv();
+        Test_Symbole(ID_TOKEN, ID_ERR);
+        Test_Symbole(EG_TOKEN, EG_ERR);
+        Test_Symbole(NUM_TOKEN, NUM_ERR);
+        Test_Symbole(PV_TOKEN, PV_ERR);
+        while (SYM_COUR.CODE == ID_TOKEN)
+        {
+            Sym_Suiv();
+            Test_Symbole(EG_TOKEN, EG_ERR);
+            Test_Symbole(NUM_TOKEN, NUM_ERR);
+            Test_Symbole(PV_TOKEN, PV_ERR);
+        };
+        break;
+    case VAR_TOKEN:
+        break;
+    case BEGIN_TOKEN:
+        break;
+    default:
+        Erreur(CONST_VAR_BEGIN_ERR);
+        break;
+    }
+}
+
+void VARS()
+{
+    switch (SYM_COUR.CODE)
+    {
+    case VAR_TOKEN:
+        Sym_Suiv();
+        Test_Symbole(ID_TOKEN, ID_ERR);
+
+        while (SYM_COUR.CODE == VIR_TOKEN)
+        {
+            Sym_Suiv();
+            Test_Symbole(ID_TOKEN, ID_ERR);
+        }
+
+        Test_Symbole(PV_TOKEN, PV_ERR);
+        break;
+    case BEGIN_TOKEN:
+        break;
+    default:
+        Erreur(VAR_BEGIN_ERR);
+        break;
+    }
+}
+
+void INSTS()
+{
+    //begin INST { ; INST } end
+    if (SYM_COUR.CODE == BEGIN_TOKEN)
+    {
+        Sym_Suiv();
+        INST();
+
+        while (SYM_COUR.CODE == PV_TOKEN)
+        {
+            Sym_Suiv();
+            INST();
+        }
+
+        if (SYM_COUR.CODE == END_TOKEN)
+        {
+            Sym_Suiv();
+            printf("Le programme est correcte!\n");
+            //printf("Current Token: %d\n", SYM_COUR.CODE);
+            //printf("Current Lexeme: %s\n", SYM_COUR.NOM);
+        }
+        else
+        {
+            Erreur(FIN_ERR);
+        }
     }
     else
     {
-        Erreur(COD_ERR); // Afficher une erreur si le symbole ne correspond pas à celui attendu
+        Erreur(BEGIN_ERR);
     }
 }
 
-// Fonction principale pour générer le P-code
-void PCODE()
-{
-    Test_Symbole(INT, INT_ERR); // Vérifier si le programme commence par INT
-    Test_Symbole(NUM_TOKEN, NUM_TOKEN_ERR); // Vérifier si un nombre est présent après INT
-    INST_PCODE(); // Générer le P-code des instructions
-    Test_Symbole(HLT, HLT_ERR); // Vérifier si le programme se termine par HLT
-}
+void INST()
 
-// Fonction pour générer le P-code des instructions
-void INST_PCODE()
 {
-    INSTRUCTION INST; // Déclaration d'une instruction
-
-    // Boucler jusqu'à ce que HLT soit rencontré ou que la fin du fichier soit atteinte
-    while (SYM_COUR.CODE != HLT && SYM_COUR.CODE != EOF_TOKEN)
+    //INSTS | AFFEC | SI | TANTQUE | ECRIRE | LIRE | e
+    switch (SYM_COUR.CODE)
     {
-        // Vérifier si le symbole est un nombre spécial indiquant la fin du fichier
-        if (SYM_COUR.CODE == NUM_TOKEN && strcmp(SYM_COUR.NOM, "EOF") == 0)
-        {
-            Erreur(HLT_ERR); // Afficher une erreur si la dernière instruction n'est pas HLT
-            break;
-        }
-
-        // Traitement de chaque type d'instruction
-        switch (SYM_COUR.CODE)
-        {
-        case MUL:
-        case DIV:
-        case SUB:
-        case ADD:
-        case EQL:
-        case NEQ:
-        case GTR:
-        case LSS:
-        case GEQ:
-        case LEQ:
-        case PRN:
-        case INN:
-            // Instructions arithmétiques et logiques
-            INST.MNE = SYM_COUR.CODE;
-            INTER_INST(INST); // Appeler la fonction pour interpréter l'instruction
-            Sym_Suiv(); // Passer au symbole suivant
-            break;
-
-        case INT:
-        case LDI:
-        case LDA:
-        case STO:
-        case LDV:
-        case BRN:
-        case BZE:
-            // Instructions de manipulation de la mémoire et de contrôle de flux
-            Sym_Suiv(); // Passer au symbole suivant
-            INST.MNE = SYM_COUR.CODE;
-            INST.SUITE = SYM_COUR.val;
-            INTER_INST(INST); // Appeler la fonction pour interpréter l'instruction
-            Test_Symbole(SYM_COUR.CODE, NUM_TOKEN); // Vérifier si un nombre suit l'instruction
-            break;
-
-        default:
-            Erreur(INST_ERR); // Afficher une erreur pour les instructions non reconnues
-        }
+    case BEGIN_TOKEN:
+        INSTS();
+        break;
+    case ID_TOKEN:
+        AFFEC();
+        break;
+    case IF_TOKEN:
+        SI();
+        break;
+    case WHILE_TOKEN:
+        TANTQUE();
+        break;
+    case WRITE_TOKEN:
+        ECRIRE();
+        break;
+    case READ_TOKEN:
+        LIRE();
+        break;
+    case REPEAT_TOKEN:
+        REPETER();
+        break;
+    case FOR_TOKEN:
+        POUR();
+        break;
+    case CASE_TOKEN:
+        CAS();
+        break;
+    default:
+        break;
     }
 }
 
-// Fonction principale
+void AFFEC()
+{
+    //ID := EXPR
+    Test_Symbole(ID_TOKEN, ID_ERR);
+    Test_Symbole(AFF_TOKEN, AFF_ERR);
+    EXPR();
+}
+
+void SI()
+{
+    Test_Symbole(IF_TOKEN, IF_ERR);
+    COND();
+    Test_Symbole(THEN_TOKEN, THEN_ERR);
+    INST();
+    if (SYM_COUR.CODE == ELSE_TOKEN)
+    {
+        INST();
+    }
+}
+
+void TANTQUE()
+{
+    Test_Symbole(WHILE_TOKEN, WHILE_ERR);
+    COND();
+    Test_Symbole(DO_TOKEN, DO_ERR);
+    INST();
+}
+
+void ECRIRE()
+{
+    Test_Symbole(WRITE_TOKEN, WRITE_ERR);
+    Test_Symbole(PO_TOKEN, PO_ERR);
+    EXPR();
+
+    while (SYM_COUR.CODE == VIR_TOKEN)
+    {
+        Sym_Suiv();
+        EXPR();
+    }
+
+    Test_Symbole(PF_TOKEN, PF_ERR);
+}
+
+void LIRE()
+{
+    Test_Symbole(READ_TOKEN, READ_ERR);
+    Test_Symbole(PO_TOKEN, PO_ERR);
+    Test_Symbole(ID_TOKEN, ID_ERR);
+
+    while (SYM_COUR.CODE == VIR_TOKEN)
+    {
+        Sym_Suiv();
+        Test_Symbole(ID_TOKEN, ID_ERR);
+    }
+
+    Test_Symbole(PF_TOKEN, PF_ERR);
+}
+
+void COND()
+{
+    EXPR();
+    RELOP();
+    EXPR();
+}
+
+void EXPR()
+{
+    //TERM { ADDOP TERM }
+    TERM();
+
+    while (SYM_COUR.CODE == PLUS_TOKEN || SYM_COUR.CODE == MOINS_TOKEN)
+    {
+        ADDOP();
+        TERM();
+    }
+}
+
+void TERM()
+{
+    FACT();
+
+    while (SYM_COUR.CODE == MULT_TOKEN || SYM_COUR.CODE == DIV_TOKEN)
+    {
+        MULOP();
+        FACT();
+    }
+}
+
+void FACT()
+{
+    switch (SYM_COUR.CODE)
+    {
+    case ID_TOKEN:
+        Test_Symbole(ID_TOKEN, ID_ERR);
+        break;
+    case NUM_TOKEN:
+        Test_Symbole(NUM_TOKEN, NUM_ERR);
+        break;
+    case PO_TOKEN:
+        Test_Symbole(PO_TOKEN, PO_ERR);
+        EXPR();
+        Test_Symbole(PF_TOKEN, PF_ERR);
+        break;
+    default:
+        Erreur(ERREUR_ERR);
+        break;
+    }
+}
+
+void RELOP()
+{
+    switch (SYM_COUR.CODE)
+    {
+    case EG_TOKEN:
+    case DIFF_TOKEN:
+    case INF_TOKEN:
+    case SUP_TOKEN:
+    case INFEG_TOKEN:
+    case SUPEG_TOKEN:
+        Test_Symbole(EG_TOKEN, EG_ERR);
+        break;
+    default:
+        Erreur(ERREUR_ERR);
+        break;
+    }
+}
+
+void ADDOP()
+{
+    switch (SYM_COUR.CODE)
+    {
+    case PLUS_TOKEN:
+        Test_Symbole(PLUS_TOKEN, PLUS_ERR);
+        break;
+    case MOINS_TOKEN:
+        Test_Symbole(MOINS_TOKEN, MOINS_ERR);
+        break;
+    default:
+        Erreur(ERREUR_ERR);
+        break;
+    }
+}
+
+void MULOP()
+{
+    switch (SYM_COUR.CODE)
+    {
+    case MULT_TOKEN:
+        Test_Symbole(MULT_TOKEN, MULT_ERR);
+        break;
+    case DIV_TOKEN:
+        Test_Symbole(DIV_TOKEN, DIV_ERR);
+        break;
+    default:
+        Erreur(ERREUR_ERR);
+        break;
+    }
+}
+
+void POUR()
+{
+    Test_Symbole(FOR_TOKEN, FOR_ERR);
+    Test_Symbole(ID_TOKEN, ID_ERR);
+    Test_Symbole(AFF_TOKEN, AFF_ERR);
+
+    switch (SYM_COUR.CODE)
+    {
+    case DOWNTO_TOKEN:
+        Test_Symbole(DOWNTO_TOKEN, DOWNTO_ERR);
+        break;
+    case INTO_TOKEN:
+        Test_Symbole(INTO_TOKEN, INTO_ERR);
+        break;
+    default:
+        Erreur(ERREUR_ERR);
+        break;
+    }
+
+    Test_Symbole(NUM_TOKEN, NUM_ERR);
+    Test_Symbole(DO_TOKEN, DO_ERR);
+    INST();
+
+}
+
+/*
+REPEAT_TOKEN,UNTIL_TOKEN,FOR_TOKEN,ELSE_TOKEN,CASE_TOKEN,OF_TOKEN*/
+
+void REPETER(){
+    Test_Symbole(REPEAT_TOKEN, REPEAT_ERR);
+    INST();
+    Test_Symbole(UNTIL_TOKEN, UNTIL_ERR);
+    COND();
+}
+
+void CAS()
+{
+    Test_Symbole(CASE_TOKEN, CASE_ERR);
+    Test_Symbole(ID_TOKEN, ID_ERR);
+    Test_Symbole(OF_TOKEN, OF_TOKEN);
+    Test_Symbole(NUM_TOKEN, NUM_ERR);
+    Test_Symbole(DDOT_TOKEN, DDOT_ERR);
+    INST();
+     while (SYM_COUR.CODE == NUM_TOKEN)
+    {
+        Sym_Suiv();
+        Test_Symbole(DDOT_TOKEN, DDOT_ERR);
+        INST();
+    }
+    if (SYM_COUR.CODE == ELSE_TOKEN) {
+        Sym_Suiv();
+        INST();
+    }
+    
+    Test_Symbole(END_TOKEN, END_ERR);
+}
+
+
 int main()
 {
-    // Ouverture du fichier source
     fichier = fopen("C:/Users/HP/Desktop/Mini-Compilateur-Pascal/test.p", "r");
     if (fichier == NULL)
     {
@@ -570,14 +763,26 @@ int main()
         return 1;
     }
 
-    // Lecture du premier caractère et initialisation du symbole courant
+    // PREMIER_SYM();
     Lire_Car();
     Sym_Suiv();
 
-    // Génération du P-code
-    PCODE();
+    PROGRAM();
 
-    printf("P-code parfait.\n"); // Affichage si le P-code est généré avec succès
-    fclose(fichier); // Fermeture du fichier source
+    printf("Execution du programme faite.\n");
+
+    /*if (SYM_COUR.CODE == EOF_TOKEN)
+    {
+        printf("Le programme est correcte!\n");
+    }
+    else
+    {
+        printf("Votre programme est erroné!\n");
+        printf("Current Token: %d\n", SYM_COUR.CODE);
+        printf("Current Lexeme: %s\n", SYM_COUR.NOM);
+        Sym_Suiv(); // Move this line inside the else block
+    }*/
+    fclose(fichier);
+
     return 0;
 }
