@@ -1,7 +1,6 @@
-program test;
-const tata=12; titi=123;
+int program test;
+const tata;
 var x;
 begin
-   x:=tata+titi;
-   write(x);
+   x:=tata;
 end.
