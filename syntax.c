@@ -3,7 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 
-static int ligne_actuelle=0;
+static int ligne_actuelle=1;
 
 // Déclaration des Prototypes des fonctions à utiliser
 void VARS();
@@ -109,7 +109,7 @@ typedef enum {
     FIN_ERR,            // Erreur de fin de programme
     NUM_ERR,            // Erreur sur le nombre
     ERREUR_ERR,         // Erreur générique
-    EOF_ERR,            // Erreur de fin de fichier
+    EOF_ERR,            // Erreur de fin de fichier eof
     EG_ERR,             // Erreur sur l'opérateur de comparaison "égal à"
     CONST_VAR_BEGIN_ERR,// Erreur de début de déclaration de constantes ou de variables
     VAR_BEGIN_ERR,      // Erreur de début de déclaration de variables
@@ -124,68 +124,115 @@ typedef enum {
     DDOT_ERR            // Erreur sur le deux-points
 } CODES_ERR;
 
-//--------------------------
-// Tableau contenant les noms des erreurs
-const char *noms_erreurs[] = {
-    "Erreur ID",
-    "Erreur PROGRAM",
-    "Erreur CONST",
-    "Erreur VAR",
-    "Erreur BEGIN",
-    "Erreur END",
-    "Erreur IF",
-    "Erreur THEN",
-    "Erreur WHILE",
-    "Erreur DO",
-    "Erreur READ",
-    "Erreur WRITE",
-    "Erreur PV",
-    "Erreur PT",
-    "Erreur PLUS",
-    "Erreur MOINS",
-    "Erreur MULT",
-    "Erreur DIV",
-    "Erreur VIR",
-    "Erreur AFF",
-    "Erreur INF",
-    "Erreur INFEG",
-    "Erreur SUP",
-    "Erreur SUPEG",
-    "Erreur DIFF",
-    "Erreur PO",
-    "Erreur PF",
-    "Erreur FIN",
-    "Erreur NUM",
-    "Erreur ERREUR",
-    "Erreur EOF",
-    "Erreur EG",
-    "Erreur CONST_VAR_BEGIN",
-    "Erreur VAR_BEGIN",
-    "Erreur REPEAT",
-    "Erreur UNTIL",
-    "Erreur FOR",
-    "Erreur ELSE",
-    "Erreur CASE",
-    "Erreur OF",
-    "Erreur INTO",
-    "Erreur DOWNTO",
-    "Erreur DDOT",
-};
-/* Fonction pour afficher le nom de l'erreur */
-void afficher_erreur(CODES_ERR code_erreur) {
-    int index = code_erreur;
-
-    /* Vérification si le code d'erreur est valide */
-    if (index >= 0 && noms_erreurs[index][0] != '\0') {
-        printf("Erreur: %s\n", noms_erreurs[index]);
-    } else {
-        printf("Code d'erreur invalide\n");
+//----------------------------------------------------------------
+const char *erreurToString(CODES_ERR code_erreur) {
+    switch (code_erreur) {
+        case ID_ERR: return "Erreur d'identifiant"; // 1
+        case PROGRAM_ERR: return "Erreur de programme PROGRAM"; // 2
+        case CONST_ERR: return "Erreur de constante CONST"; // 3
+        case VAR_ERR: return "Erreur de VAR"; // 4
+        case BEGIN_ERR: return "Erreur dans BEGIN"; // 5
+        case END_ERR: return "Erreur dans END"; // 6
+        case IF_ERR: return "Erreur de IF"; // 7
+        case THEN_ERR: return "Erreur de THEN"; // 8
+        case WHILE_ERR: return "Erreur de WHILE"; // 9
+        case DO_ERR: return "Erreur de DO"; // 10
+        case READ_ERR: return "Erreur de READ"; // 11
+        case WRITE_ERR: return "Erreur WRITE"; // 12
+        case PV_ERR: return "Erreur de point-virgule PV"; // 13
+        case PT_ERR: return "Erreur de point PT"; // 14
+        case PLUS_ERR: return "Erreur de PLUS"; // 15
+        case MOINS_ERR: return "Erreur de MOINS"; // 16
+        case MULT_ERR: return "Erreur de multiplication MULT"; // 17
+        case DIV_ERR: return "Erreur de division DIV"; // 18
+        case VIR_ERR: return "Erreur de virgule VIR"; // 19
+        case AFF_ERR: return "Erreur d'affectation AFF"; // 20
+        case INF_ERR: return "Erreur d'inférieur INF"; // 21
+        case INFEG_ERR: return "Erreur d'inférieur ou égal INFEG"; // 22
+        case SUP_ERR: return "Erreur de supérieur SUP"; // 23
+        case SUPEG_ERR: return "Erreur de supérieur ou égal SUPEG"; // 24
+        case DIFF_ERR: return "Erreur de différent DIFF"; // 25
+        case PO_ERR: return "Erreur de parenthèse ouvrante PO"; // 26
+        case PF_ERR: return "Erreur de parenthèse fermante PF"; // 27
+        case FIN_ERR: return "Erreur de fin de fichier FIN"; // 28
+        case NUM_ERR: return "Erreur de nombre NUM"; // 29
+        case ERREUR_ERR: return "Erreur generique ERREUR"; // 30
+        case EOF_ERR: return "Erreur de fin de fichier EOF"; // 31
+        case EG_ERR: return "Erreur d'égalité  EG"; // 32
+        case CONST_VAR_BEGIN_ERR: return "Erreur de constante, de variable ou de début CONST_VAR_BRGIN"; // 33
+        case VAR_BEGIN_ERR: return "Erreur de variable ou de début VAR_BEGIN"; // 34
+        case REPEAT_ERR: return "Erreur de répétition REPEAT"; // 35
+        case UNTIL_ERR: return "Erreur de jusqu'à UNTIL"; // 36
+        case FOR_ERR: return "Erreur de pour FOR"; // 37
+        case ELSE_ERR: return "Erreur de sinon ELSE"; // 38
+        case CASE_ERR: return "Erreur de cas CASE"; // 39
+        case OF_ERR: return "Erreur de OF"; // 40
+        case INTO_ERR: return "Erreur de INTO"; // 41
+        case DOWNTO_ERR: return "Erreur de décroissant DOWNTO"; // 42
+        case DDOT_ERR: return "Erreur de deux points DDOT"; // 43
+        default: return "Erreur inconnue"; // Si le code d'erreur est inconnu
     }
 }
-void afficher_erreurX(int ligne, const char *message) {
-    printf("Erreur à la ligne %d: %s\n", ligne, message);
-}
+//----------------------------------------------------------------
 
+//--------------------------
+// Tableau contenant les noms des erreurs
+//  const char *noms_erreurs[] = {
+//     "Erreur ID",
+//     "Erreur PROGRAM",
+//     "Erreur CONST",
+//     "Erreur VAR",
+//     "Erreur BEGIN",
+//     "Erreur END",
+//     "Erreur IF",
+//     "Erreur THEN",
+//     "Erreur WHILE",
+//     "Erreur DO",
+//     "Erreur READ",
+//     "Erreur WRITE",
+//     "Erreur PV",
+//     "Erreur PT",
+//     "Erreur PLUS",
+//     "Erreur MOINS",
+//     "Erreur MULT",
+//     "Erreur DIV",
+//     "Erreur VIR",
+//     "Erreur AFF",
+//     "Erreur INF",
+//     "Erreur INFEG",
+//     "Erreur SUP",
+//     "Erreur SUPEG",
+//     "Erreur DIFF",
+//     "Erreur PO",
+//     "Erreur PF",
+//     "Erreur FIN",
+//     "Erreur NUM",
+//     "Erreur ERREUR",
+//     "Erreur EOF",
+//     "Erreur EG",
+//     "Erreur CONST_VAR_BEGIN",
+//     "Erreur VAR_BEGIN",
+//     "Erreur REPEAT",
+//     "Erreur UNTIL",
+//     "Erreur FOR",
+//     "Erreur ELSE",
+//     "Erreur CASE",
+//     "Erreur OF",
+//     "Erreur INTO",
+//     "Erreur DOWNTO",
+//     "Erreur DDOT",
+// };
+/* Fonction pour afficher le nom de l'erreur */
+// void afficher_erreur(CODES_ERR code_erreur) {
+//     int index = code_erreur;
+
+//     /* Vérification si le code d'erreur est valide */
+//     if (index >= 0 && noms_erreurs[index][0] != '\0') {
+//         printf("\t%s (%d)\n", noms_erreurs[index],index+1); // // Nom et Numero de l'erreur
+//     } else {
+//         printf("Code d'erreur invalide\n");
+//     }
+// }
 
 //--------------------------
 // Structure représentant un symbole courant
@@ -387,14 +434,14 @@ void Lire_Car() {
 }
 // Fonction pour gérer les erreurs
 void Erreur(CODES_ERR code) {
-     // Déclaration de la variable statique pour conserver son état entre les appels
-    printf("Erreur à la ligne %d: ", ligne_actuelle); // Affichage de la ligne actuelle
+    printf("Erreur a la ligne %d: \n", ligne_actuelle); // Affichage de la ligne actuelle
 
-    printf("Erreur: %d\n", code);
-    printf("Current Token: %d\n", SYM_COUR.CODE);
-    printf("Current Lexeme: %s\n", SYM_COUR.NOM);
+    //afficher_erreur(code);
+    printf("\t%s\n", erreurToString(code)); // Utilisation de la fonction erreurToString pour obtenir le nom de l'erreur
+    printf("\tCurrent Token: %d\n", SYM_COUR.CODE);
+    printf("\tCurrent Lexeme: %s\n", SYM_COUR.NOM);
 
-    afficher_erreur(code);
+   // afficher_erreur(code);
 
     exit(EXIT_FAILURE);  // Terminer le programme avec un code d'erreur
 }
@@ -572,6 +619,8 @@ void ECRIRE() {
     }
 
     Test_Symbole(PF_TOKEN, PF_ERR);  // Vérifier le parenthèse fermante
+    Test_Symbole(PV_TOKEN, PV_ERR);  // Vérifier le point virgule
+
 }
 
 // Fonction pour traiter l'instruction de lecture
@@ -587,6 +636,7 @@ void LIRE() {
     }
 
     Test_Symbole(PF_TOKEN, PF_ERR);  // Vérifier le parenthèse fermante
+    Test_Symbole(PV_TOKEN, PV_ERR);  // Vérifier le point virgule
 }
 
 // Fonction pour traiter la condition
