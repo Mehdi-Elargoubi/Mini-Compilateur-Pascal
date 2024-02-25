@@ -155,7 +155,7 @@ const char *erreurToString(CODES_ERR code_erreur) {
         case PF_ERR: return "Erreur de parenthèse fermante PF"; // 27
         case FIN_ERR: return "Erreur de fin de fichier FIN"; // 28
         case NUM_ERR: return "Erreur de nombre NUM"; // 29
-        case ERREUR_ERR: return "Erreur generique ERREUR"; // 30
+        case ERREUR_ERR: return "Erreur-Generique ERREUR"; // 30
         case EOF_ERR: return "Erreur de fin de fichier EOF"; // 31
         case EG_ERR: return "Erreur d'égalité  EG"; // 32
         case CONST_VAR_BEGIN_ERR: return "Erreur de constante, de variable ou de début CONST_VAR_BRGIN"; // 33
