@@ -1,0 +1,16 @@
+INT 	 2 
+LDA 	 0 
+LDI 	 12 
+STO 
+LDA 	 1 
+LDI 	 123 
+STO 
+LDA 	 2 
+LDA 	 0 
+LDV 
+LDA 	 1 
+LDV 
+ADD 
+STO 
+PRN 
+HLT 
