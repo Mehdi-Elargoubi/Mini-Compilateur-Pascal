@@ -693,6 +693,7 @@ void regle5() {
 // Fonction principale
 int main() {
     fichier = fopen("C:/Users/HP/Desktop/Mini-Compilateur-Pascal/test.p", "r"); // Ouverture du fichier source
+    //fichier = fopen("C:/Users/HP/Desktop/Mini-Compilateur-Pascal/tests/test1.p", "r"); // Ouverture du fichier source
     if (fichier == NULL)
     {
         perror("Erreur lors de l'ouverture du fichier!"); // Affichage de l'erreur si l'ouverture du fichier échoue
