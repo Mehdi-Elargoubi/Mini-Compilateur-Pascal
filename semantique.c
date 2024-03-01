@@ -507,6 +507,7 @@ void store_var() {
 	while((SYM_COUR.CODE != CONST_TOKEN) && (SYM_COUR.CODE != PROGRAM_TOKEN) && (SYM_COUR.CODE != BEGIN_TOKEN)) {
 		if(SYM_COUR.CODE == ID_TOKEN) {
             regle2(); // Vérification de la règle 2
+            printf("La regle 2 est verifiee.\n");
 			strcpy((TAB_IDFS+k)->NOM, SYM_COUR.NOM); // Copie du nom de l'identifiant
 			(TAB_IDFS+k)->TIDF = TVAR; // Définition du type d'identifiant comme variable
             k++; // Passage à l'index suivant dans la table des identifiants
