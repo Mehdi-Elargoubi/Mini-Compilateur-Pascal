@@ -1,6 +1,11 @@
 program test;
+const tata:integer=12;
 var x:integer;
 begin
-   for x:=0 to 5 do  
-	  write(x);
+   x:=10;
+   x:=x+tata;
+
+   write(x)
 end.
+
+

@@ -173,66 +173,6 @@ const char *erreurToString(CODES_ERR code_erreur) {
     }
 }
 
-//--------------------------
-// Tableau contenant les noms des erreurs
-//  const char *noms_erreurs[] = {
-//     "Erreur ID",
-//     "Erreur PROGRAM",
-//     "Erreur CONST",
-//     "Erreur VAR",
-//     "Erreur BEGIN",
-//     "Erreur END",
-//     "Erreur IF",
-//     "Erreur THEN",
-//     "Erreur WHILE",
-//     "Erreur DO",
-//     "Erreur READ",
-//     "Erreur WRITE",
-//     "Erreur PV",
-//     "Erreur PT",
-//     "Erreur PLUS",
-//     "Erreur MOINS",
-//     "Erreur MULT",
-//     "Erreur DIV",
-//     "Erreur VIR",
-//     "Erreur AFF",
-//     "Erreur INF",
-//     "Erreur INFEG",
-//     "Erreur SUP",
-//     "Erreur SUPEG",
-//     "Erreur DIFF",
-//     "Erreur PO",
-//     "Erreur PF",
-//     "Erreur FIN",
-//     "Erreur NUM",
-//     "Erreur ERREUR",
-//     "Erreur EOF",
-//     "Erreur EG",
-//     "Erreur CONST_VAR_BEGIN",
-//     "Erreur VAR_BEGIN",
-//     "Erreur REPEAT",
-//     "Erreur UNTIL",
-//     "Erreur FOR",
-//     "Erreur ELSE",
-//     "Erreur CASE",
-//     "Erreur OF",
-//     "Erreur INTO",
-//     "Erreur DOWNTO",
-//     "Erreur DDOT",
-// };
-/* Fonction pour afficher le nom de l'erreur */
-// void afficher_erreur(CODES_ERR code_erreur) {
-//     int index = code_erreur;
-
-//     /* Vérification si le code d'erreur est valide */
-//     if (index >= 0 && noms_erreurs[index][0] != '\0') {
-//         printf("\t%s (%d)\n", noms_erreurs[index],index+1); // // Nom et Numero de l'erreur
-//     } else {
-//         printf("Code d'erreur invalide\n");
-//     }
-// }
-
-//--------------------------
 // Structure représentant un symbole courant
 typedef struct {
     CODES_LEX CODE;   // Code lexical du symbole
@@ -440,7 +380,6 @@ void Erreur(CODES_ERR code) {
     printf("\tCurrent Lexeme: %s\n", SYM_COUR.NOM);
 
    // afficher_erreur(code);
-
     exit(EXIT_FAILURE);  // Terminer le programme avec un code d'erreur
 }
 
@@ -788,6 +727,7 @@ void CAS() {
 
     Test_Symbole(END_TOKEN, END_ERR);  // Vérifier et consommer le token END
 }
+
 
 int main() {
     // Ouvrir le fichier en mode lecture

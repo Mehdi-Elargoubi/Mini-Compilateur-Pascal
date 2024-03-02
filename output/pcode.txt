@@ -1,22 +1,18 @@
 INT 	 10 
 LDA 	 0 
-LDI 	 0 
+LDI 	 12 
 STO 
+LDA 	 1 
+LDI 	 10 
+STO 
+LDA 	 1 
+LDA 	 1 
+LDV 
 LDA 	 0 
 LDV 
-LDI 	 5 
-LDI 	 1 
 ADD 
-NEQ 
-BZE 	 21 
-LDA 	 0 
+STO 
+LDA 	 1 
 LDV 
 PRN 
-LDA 	 0 
-LDA 	 0 
-LDV 
-LDI 	 1 
-ADD 
-STO 
-BRN 	 4 
 HLT 

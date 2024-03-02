@@ -501,7 +501,6 @@ void store_const() {
 	table_id(); // Appel récursif pour continuer l'analyse
 }
 
-
 // Implémentation de la fonction pour stocker les identifiants de variable
 void store_var() {
 	while((SYM_COUR.CODE != CONST_TOKEN) && (SYM_COUR.CODE != PROGRAM_TOKEN) && (SYM_COUR.CODE != BEGIN_TOKEN)) {
@@ -539,7 +538,6 @@ void affich() {
         printf("La semantique est erronee!\n");	 // Affichage si la sémantique est incorrecte
 }
 
-
 // Implémentation de la règle sémantique 1
 // Règle 1 : Vérification des identifiants utilisés dans le programme pour s'assurer qu'ils ont été déclarés au préalable.
 void regle1() {
@@ -575,7 +573,6 @@ void check() {
 	
 }
 
-
 // Implémentation de la règle sémantique 2
 // Règle 2 : Vérification qu'un identifiant n'a pas été déclaré plus d'une fois (doublons d'identifiants).
 void regle2() {
@@ -594,7 +591,6 @@ void regle2() {
 		// Pas d'erreur, aucune action nécessaire
 	}
 }
-
 
 // Implémentation de la règle sémantique 3
 //Règle 3 : Vérification que les identifiants utilisés dans les instructions sont bien déclarés.
@@ -665,7 +661,6 @@ void regle4() {
     }
 }
 
-
 // Implémentation de la règle sémantique 5
 //Règle 5 : Vérification que le nom du programme principal n'est pas utilisé comme identifiant ailleurs dans le code.
 void regle5() {
@@ -689,8 +684,6 @@ void regle5() {
 	}
 }
 
-
-// Fonction principale
 int main() {
     fichier = fopen("C:/Users/HP/Desktop/Mini-Compilateur-Pascal/test.p", "r"); // Ouverture du fichier source
     //fichier = fopen("C:/Users/HP/Desktop/Mini-Compilateur-Pascal/tests/test1.p", "r"); // Ouverture du fichier source

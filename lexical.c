@@ -237,6 +237,7 @@ const char * codeToString(CODES_LEX code) {
     }
 }
 
+
 int main() {
     // Ouverture du fichier source en mode lecture
     fichier = fopen("C:/Users/HP/Desktop/Mini-Compilateur-Pascal/test.p", "r");

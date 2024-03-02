@@ -9,13 +9,11 @@ typedef enum {
     ADD, SUB, MUL, DIV, EQL, NEQ, GTR, LSS, GEQ, LEQ, PRN, INN, INT, LDI, LDA, LDV, STO, BRN, BZE, HLT, NUM
 } CLASS_LEX;
 
-
 // Structure pour représenter une instruction
 typedef struct {
     CLASS_LEX MNE; // Mnémonique de l'instruction
     int SUITE;     // Valeur associée à l'instruction (adresse, valeur, etc.)
 } INSTRUCTION;
-
 
 // Mémoire et Programme
 int MEM[TAILLEMEM];           // Mémoire pour stocker les données
@@ -24,7 +22,6 @@ int SP = -1;                   // Pointeur de pile
 int PC = -1;                   // Compteur de programme
 int OFFSET;                    // Décalage pour la pile
 
-
 // Fonction pour écrire une instruction sans argument dans le programme en code intermédiaire
 void ECRIRE1(CLASS_LEX M) {
     if (PC == TAILLECODE) // Vérifie si le programme en code intermédiaire a atteint sa taille maximale
@@ -32,7 +29,6 @@ void ECRIRE1(CLASS_LEX M) {
     PC++; // Incrémente le compteur de programme
     PCODE[PC].MNE = M; /// Affecte le mnémonique de l'instruction au programme en code intermédiaire
 }
-
 
 // Fonction pour écrire une instruction avec un argument dans le programme en code intermédiaire
 void ECRIRE2(CLASS_LEX M, int A) {
@@ -45,7 +41,6 @@ void ECRIRE2(CLASS_LEX M, int A) {
     PCODE[PC].MNE = M;
     PCODE[PC].SUITE = A;
 }
-
 
 // Fonction pour exécuter une instruction à partir du programme en code intermédiaire
 void INTER_INST(INSTRUCTION INST) {
@@ -115,7 +110,6 @@ void INTER_INST(INSTRUCTION INST) {
     }
 }
 
-
 // Fonction pour exécuter le programme en code intermédiaire
 void INTER_PCODE() {
     // Initialise le compteur de programme
@@ -124,7 +118,6 @@ void INTER_PCODE() {
     while (PCODE[PC].MNE != HLT)
         INTER_INST(PCODE[PC]);
 }
-
 
 // Fonction principale
 int main() {

@@ -11,7 +11,6 @@
 // Déclaration de variable globale
 int numberOfTokens = 0;  // Nombre de tokens dans le code
 
-
 // Déclaration de l'énumération pour les tokens lexicaux
 typedef enum {
     ID_TOKEN,              // Token pour un identifiant
@@ -65,7 +64,6 @@ typedef enum {
     STRING_DATA_TOKEN,     // Token pour les données de type STRING
     ARRAY_DATA_TOKEN      // Token pour les données de type ARRAY
 } CODES_LEX;
-
 
 // Déclaration de l'énumération pour les codes d'erreur
 typedef enum {
@@ -221,7 +219,6 @@ const char *getErrorMessage(CODES_ERR error_code)
     }
 }
 
-
 // Variable globale pour indiquer si la lecture est activée ou non
 int isReadActivated = 0;
 
@@ -239,7 +236,6 @@ TSym_Cour SYM_COUR;   // Variable représentant le symbole courant
 
 // Déclaration d'un pointeur de fichier
 FILE *fichier;   // Pointeur de fichier utilisé pour lire ou écrire des données dans un fichier
-
 
 char Car_Cour; // caractère courant
 
@@ -317,7 +313,6 @@ typedef enum
     HLT    // Arrêt
 } MNEMONIQUES;
 
-
 // Définition de la structure pour représenter une instruction du PCode
 typedef struct
 {
@@ -378,7 +373,6 @@ void GENERER2(MNEMONIQUES M, int A);
 void SaveInstToFile(FILE *FICH_SORTIE, INSTRUCTION INST, int i); // Fonction pour sauvegarder une instruction dans un fichier
 void INTER_PCODE(); // Fonction principale pour interpréter le P CODE
 void INTER_INST(INSTRUCTION INST); // Fonction pour interpréter une instruction
-
 
 
 // Définition des fonctions à utiliser
@@ -533,7 +527,6 @@ void lire_mot()
     }
 }
 
-
 void lire_nombre()
 {
     char nombre[11]; // Tableau pour stocker le nombre, permettant jusqu'à 10 chiffres et un caractère de fin de chaîne
@@ -572,7 +565,6 @@ void lire_nombre()
 
     strcpy(SYM_COUR.NOM, nombre); // Copier la chaîne dans SYM_COUR.NOM pour stockage
 }
-
 
 void Check()
 {
@@ -729,13 +721,11 @@ void Check()
     strcpy(lastIdToken, TAB_IDFS[i].NOM); // Enregistrer le dernier jeton d'identifiant vérifié
 }
 
-
 // Fonction pour lire le prochain caractère du fichier
 void Lire_Car()
 {
     Car_Cour = fgetc(fichier); // Lire le caractère courant depuis le fichier
 }
-
 
 // Fonction pour obtenir le symbole suivant du programme
 void Sym_Suiv()
@@ -856,7 +846,6 @@ void Sym_Suiv()
     // printf("Symbol: %s\n", SYM_COUR.NOM); // Afficher le symbole courant (décommenter pour le débogage)
 }
 
-
 // Fonction pour gérer les erreurs de syntaxe
 void Erreur(CODES_ERR code, char *origin)
 {
@@ -864,8 +853,6 @@ void Erreur(CODES_ERR code, char *origin)
     printf("Syntaxic Error\n\tError: %s\n\tOrigin: %s\n\tToken number: %d\n", getErrorMessage(code), origin, numberOfTokens);
     exit(EXIT_FAILURE); // Sortir du programme avec un code d'erreur
 }
-
-
 
 // Fonction pour générer un code P avec une instruction à un opérande
 void GENERER1(MNEMONIQUES M)
@@ -1024,9 +1011,6 @@ void INTER_PCODE()
         INTER_INST(PCODE[PC]); // Exécuter l'instruction courante
 }
 
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 // Fonction pour tester le symbole courant
 void Test_Symbole(CODES_LEX cl, CODES_ERR COD_ERR)
 {
@@ -1040,7 +1024,6 @@ void Test_Symbole(CODES_LEX cl, CODES_ERR COD_ERR)
     else
         Erreur(COD_ERR, "Test_Symbole"); // Sinon, signaler une erreur
 }
-
 
 // Fonction pour analyser une instruction PROGRAM
 void PROGRAM()
@@ -1124,8 +1107,6 @@ void BLOCK()
     PCODE[0].SUITE = 2; // Définir le pointeur d'instruction sur 2
     INSTS(); // Analyser les instructions
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void CONSTS()
 {
@@ -1224,7 +1205,6 @@ void VARS()
     }
 }
 
-
 void INSTS()
 {
     // begin INST { ; INST } end
@@ -1254,7 +1234,6 @@ void INSTS()
         Erreur(BEGIN_ERR, "INSTS"); // Génère une erreur si le symbole suivant n'est pas conforme à un début de programme
     }
 }
-
 
 void INST()
 {
@@ -1293,7 +1272,6 @@ void INST()
     }
 }
 
-
 // Cette fonction analyse une instruction d'affectation
 void AFFEC()
 {
@@ -1321,7 +1299,6 @@ void AFFEC()
     GENERER1(STO);
 }
 
-
 // Cette fonction analyse une structure conditionnelle SI (IF)
 void SI()
 {
@@ -1338,7 +1315,6 @@ void SI()
     }
 }
 
-
 // Cette fonction analyse une boucle TANT QUE (WHILE)
 void TANTQUE()
 {
@@ -1352,7 +1328,6 @@ void TANTQUE()
     GENERER2(BRN, LABEL_BRN); // Générer une instruction de saut au début de la condition
     PCODE[INDICE_BZE].SUITE = PC + 1; // Indiquer l'emplacement de la prochaine instruction après le TANT QUE
 }
-
 
 // Cette fonction analyse une instruction d'affichage (WRITE)
 void ECRIRE()
@@ -1372,7 +1347,6 @@ void ECRIRE()
 
     Test_Symbole(PF_TOKEN, PF_ERR); // Vérifier si le symbole suivant est )
 }
-
 
 // Cette fonction analyse une instruction de lecture (READ)
 void LIRE()
@@ -1411,7 +1385,6 @@ void LIRE()
     }
     Test_Symbole(PF_TOKEN, PF_ERR); // Vérifier si le symbole suivant est )
 }
-
 
 // Cette fonction analyse une condition (COND)
 void COND()
@@ -1455,7 +1428,6 @@ void COND()
     }
 }
 
-
 // Cette fonction analyse une expression arithmétique (EXPR)
 void EXPR()
 {
@@ -1484,7 +1456,6 @@ void EXPR()
     }
 }
 
-
 // Cette fonction analyse un terme (TERM)
 void TERM()
 {
@@ -1511,7 +1482,6 @@ void TERM()
         }
     }
 }
-
 
 // Cette fonction analyse un facteur (FACT)
 void FACT()
@@ -1551,7 +1521,6 @@ void FACT()
     }
 }
 
-
 // Cette fonction analyse un opérateur de comparaison (RELOP)
 void RELOP()
 {
@@ -1587,7 +1556,6 @@ void RELOP()
     }
 }
 
-
 // Cette fonction analyse un opérateur d'addition ou de soustraction (ADDOP)
 void ADDOP()
 {
@@ -1607,7 +1575,6 @@ void ADDOP()
     }
 }
 
-
 // Cette fonction analyse un opérateur de multiplication ou de division (MULOP)
 void MULOP()
 {
@@ -1626,7 +1593,6 @@ void MULOP()
         break;
     }
 }
-
 
 // Cette fonction analyse une boucle POUR (POUR)
 void POUR()
@@ -1694,7 +1660,6 @@ void POUR()
     PCODE[INDICE_BZE].SUITE = PC + 1; // Mettre à jour la suite de l'instruction BZE
 }
 
-
 /*  REPEAT_TOKEN,UNTIL_TOKEN,FOR_TOKEN,ELSE_TOKEN,CASE_TOKEN,OF_TOKEN  */
 
 // Cette fonction analyse une boucle REPETER (REPETER)
@@ -1705,8 +1670,6 @@ void REPETER()
     Test_Symbole(UNTIL_TOKEN, UNTIL_ERR); // Vérifier le token UNTIL
     COND(); // Analyser la condition de sortie de la boucle
 }
-
-
 
 // Cette fonction analyse une instruction CAS (CAS)
 void CAS()
@@ -1740,7 +1703,6 @@ void CAS()
     // Vérifier le token END
     Test_Symbole(END_TOKEN, END_ERR);
 }
-
 
 // Cette fonction sauvegarde le code P dans un fichier (SavePCodeToFile)
 void SavePCodeToFile(FILE *FICH_SORTIE);

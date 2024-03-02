@@ -670,7 +670,6 @@ void lire_nombre()
     strcpy(SYM_COUR.NOM, nombre); // Copie du nombre converti dans le champ NOM du jeton
 }
 
-
 // Cette fonction gère la déclaration des types de variables et effectue les actions associées en fonction du type spécifié.
 void TYPE(int isIntitlized)
 { 
@@ -762,7 +761,6 @@ void TYPE(int isIntitlized)
         break;
     }
 }
-
 
 // Cette fonction vérifie la validité des identificateurs déclarés dans le programme et génère des erreurs si nécessaire.
 void Check()
@@ -905,16 +903,13 @@ void Check()
     strcpy(lastIdToken, TAB_IDFS[i].NOM); // Copie le nom du dernier identificateur analysé dans une variable globale
 }
 
-
 // Cette fonction lit un caractère à partir du fichier en cours de lecture et le stocke dans la variable globale Car_Cour.
 void Lire_Car()
 {
     Car_Cour = fgetc(fichier); // Utilise la fonction fgetc() pour lire un caractère à partir du fichier et le stocke dans Car_Cour
 }
 
-
 // Cette fonction analyse le caractère courant (Car_Cour) et détermine le symbole suivant en fonction de ce caractère.
-
 void Sym_Suiv()
 {
     // Ignorer les espaces, les sauts de ligne et les tabulations
@@ -1085,7 +1080,6 @@ void Sym_Suiv()
     }
 }
 
-
 void Erreur(CODES_ERR code, char *origin)
 {
     // Affichage de l'erreur syntaxique avec son origine
@@ -1213,7 +1207,6 @@ void INTER_PCODE()
     while (PCODE[PC].MNE != HLT)
         INTER_INST(PCODE[PC]);
 }
-
 
 void INTER_INST(INSTRUCTION INST)
 {
@@ -1405,7 +1398,6 @@ void INTER_INST(INSTRUCTION INST)
 
 }
 
-
 void Test_Symbole(CODES_LEX cl, CODES_ERR COD_ERR)
 {
     // Vérifie si le symbole courant correspond au code lexial attendu
@@ -1542,9 +1534,7 @@ void VARS()
         break;
     }
 }
-
 //----------------------
-
 
 void INSTS()
 {
@@ -2264,7 +2254,7 @@ int main()
 
     printf("Le code Pascal a ete compile avec succes!\n"); // Affichage d'un message de réussite de la compilation
 
-    // INTER_PCODE(); // Appel de la fonction pour interpréter le code intermédiaire (décommenter si nécessaire)
+    INTER_PCODE(); // Appel de la fonction pour interpréter le code intermédiaire (décommenter si nécessaire)
 
     SavePCodeToFile(FICH_SORTIE); // Appel de la fonction pour sauvegarder le code intermédiaire dans le fichier de sortie
     fclose(FICH_SORTIE); // Fermeture du fichier de sortie
