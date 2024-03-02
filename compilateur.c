@@ -2237,3 +2237,40 @@ void SavePCodeToFile(FILE *FICH_SORTIE)
     }
 }
 
+int main()
+{
+    FILE *FICH_SORTIE; // Déclaration d'un pointeur de fichier pour le fichier de sortie
+    FICH_SORTIE = fopen("pcode.txt", "w"); // Ouverture du fichier de sortie en mode écriture
+    fichier = fopen("C:/Users/HP/Desktop/Mini-Compilateur-Pascal/test.p", "r"); // Ouverture du fichier source en mode lecture
+
+    if (fichier == NULL)
+    {
+        perror("Erreur lors de l'ouverture du fichier!"); // Affichage d'une erreur si le fichier source n'a pas pu être ouvert
+        return 1; // Quitte le programme avec un code d'erreur
+    }
+
+    // Initialisation de TAB_IDFS
+    TAB_IDFS = malloc(100 * sizeof(T_TAB_IDF)); // Allocation de mémoire pour la table des identificateurs
+    if (TAB_IDFS == NULL)
+    {
+        perror("Erreur lors de l'allocation de memoire pour TAB_IDFS!"); // Affichage d'une erreur si l'allocation de mémoire a échoué
+        return 1; // Quitte le programme avec un code d'erreur
+    }
+
+    Lire_Car(); // Lecture du premier caractère du fichier source
+    Sym_Suiv(); // Analyse du premier symbole
+
+    PROGRAM(); // Appel de la fonction PROGRAM pour commencer l'analyse syntaxique du programme Pascal
+
+    printf("Le code Pascal a ete compile avec succes!\n"); // Affichage d'un message de réussite de la compilation
+
+    // INTER_PCODE(); // Appel de la fonction pour interpréter le code intermédiaire (décommenter si nécessaire)
+
+    SavePCodeToFile(FICH_SORTIE); // Appel de la fonction pour sauvegarder le code intermédiaire dans le fichier de sortie
+    fclose(FICH_SORTIE); // Fermeture du fichier de sortie
+
+    fclose(fichier); // Fermeture du fichier source
+    free(TAB_IDFS); // Libération de la mémoire allouée pour la table des identificateurs
+
+    return 0; // Quitte le programme avec un code de succès
+}
