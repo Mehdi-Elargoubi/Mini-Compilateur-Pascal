@@ -1845,4 +1845,395 @@ void LIRE()
     Test_Symbole(PF_TOKEN, PF_ERR);
 }
 
+void COND()
+{
+    EXPR(); // Évalue la première expression de la condition
+    RELOP();// Analyse l'opérateur de comparaison
+    EXPR();// Évalue la deuxième expression de la condition
+
+    // Génère les instructions P-CODE correspondantes à l'opérateur de comparaison
+    switch (opRELOP)
+    {
+    case 1: // Opérateur de comparaison '!=' (différent de)
+        if (LOOP_LOGIC)
+        {
+            GENERER1(NEQ);
+            LOOP_LOGIC = 0;
+        }
+        else        
+        {
+            GENERER1(EQL);
+        }
+        break;
+    case 2: // Opérateur de comparaison '=' (égal à)
+        if (LOOP_LOGIC)
+        {
+            GENERER1(EQL);
+            LOOP_LOGIC = 0;
+        }
+        else
+        {
+            GENERER1(NEQ);
+        }
+        break;
+    case 3: // Opérateur de comparaison '>=' (supérieur ou égal à)
+        if (LOOP_LOGIC)
+        {
+            GENERER1(GEQ);
+            LOOP_LOGIC = 0;
+        }
+        else
+        {
+            GENERER1(LSS);
+        }
+        break;
+    case 4: // Opérateur de comparaison '<=' (inférieur ou égal à)
+        if (LOOP_LOGIC)
+        {
+            GENERER1(LEQ);
+            LOOP_LOGIC = 0;
+        }
+        else
+        {
+            GENERER1(GTR);
+        }
+        break;
+    case 5: // Opérateur de comparaison '>' (strictement supérieur à)
+        if (LOOP_LOGIC)
+        {
+            GENERER1(GTR);
+            LOOP_LOGIC = 0;
+        }
+        else
+        {
+            GENERER1(LEQ);
+        }
+        break;
+    case 6: // Opérateur de comparaison '<' (strictement inférieur à)
+        if (LOOP_LOGIC)
+        {
+            GENERER1(LSS);
+            LOOP_LOGIC = 0;
+        }
+        else
+        {
+            GENERER1(GEQ);
+        }
+        break;
+    default: // Erreur si l'opérateur de comparaison est inconnu
+        Erreur(ERREUR_ERR, "COND");
+        break;
+    }
+}
+
+void EXPR()
+{
+    // Évalue le premier terme de l'expression
+    TERM();
+
+    // Évalue les opérateurs d'addition ou de soustraction suivis de leurs termes
+    while (SYM_COUR.CODE == PLUS_TOKEN || SYM_COUR.CODE == MOINS_TOKEN)
+    {
+        ADDOP(); // Analyse l'opérateur d'addition ou de soustraction
+        TERM();  // Évalue le terme suivant
+
+        // Génère les instructions P-CODE correspondantes à l'opérateur d'addition ou de soustraction
+        switch (opADDOP)
+        {
+        case 1: // Opérateur d'addition '+'
+            GENERER1(ADD);
+            break;
+        case 2: // Opérateur de soustraction '-'
+            GENERER1(SUB);
+            break;
+        default: // Erreur si l'opérateur d'addition ou de soustraction est inconnu
+            Erreur(ERREUR_ERR, "EXPR");
+            break;
+        }
+    }
+}
+
+void TERM()
+{
+    FACT();  // Évalue le premier facteur de la expression
+
+    // Évalue les opérateurs de multiplication ou de division suivis de leurs facteurs
+    while (SYM_COUR.CODE == MULT_TOKEN || SYM_COUR.CODE == DIV_TOKEN)
+    {
+        MULOP(); // Analyse l'opérateur de multiplication ou de division
+        FACT();  // Évalue le facteur suivant
+
+        // Génère les instructions P-CODE correspondantes à l'opérateur de multiplication ou de division
+        switch (opMULOP)
+        {
+        case 1: // Opérateur de multiplication '*'
+            GENERER1(MUL);
+            break;
+        case 2: // Opérateur de division '/'
+            GENERER1(DIV);
+            break;
+        default: // Erreur si l'opérateur de multiplication ou de division est inconnu
+            Erreur(ERREUR_ERR, "TERM");
+            break;
+        }
+    }
+}
+
+void FACT()
+{
+    int i;
+
+    // Itère sur la table des symboles pour trouver une correspondance des noms
+    switch (SYM_COUR.CODE)
+    {
+    case ID_TOKEN:
+        // Recherche dans la table des symboles pour trouver l'adresse de la variable
+        for (i = 0; i < TABLEINDEX; i++)
+        {
+            if (strcmp(TABLESYM[i].NOM, SYM_COUR.NOM) == 0)
+            {
+                // Empile l'adresse de la constante ou de la variable trouvée
+                GENERER2(LDA, TABLESYM[i].ADRESSE);
+                // Remplace cette adresse par sa valeur
+                GENERER1(LDV);
+                break;
+            }
+        }
+        Test_Symbole(ID_TOKEN, ID_ERR);
+        break;
+
+    case BOOLEAN_DATA_TOKEN:
+    case INTEGER_DATA_TOKEN:
+        // Empile la valeur trouvée
+        GENERER2(LDI, SYM_COUR.val);
+        Test_Symbole(SYM_COUR.CODE, SYM_COUR.CODE == BOOLEAN_DATA_TOKEN ? BOOLEAN_DATA_ERR : INTEGER_DATA_ERR);
+        break;
+
+    case PO_TOKEN:
+        Test_Symbole(PO_TOKEN, PO_ERR);
+        EXPR();
+        Test_Symbole(PF_TOKEN, PF_ERR);
+        break;
+
+    default:
+        Erreur(ERREUR_ERR, "FACT");
+        break;
+    }
+}
+
+void RELOP()
+{
+    // Analyse le symbole courant pour déterminer l'opérateur de comparaison
+    switch (SYM_COUR.CODE)
+    {
+    case EG_TOKEN: // Opérateur d'égalité '=='
+        Test_Symbole(EG_TOKEN, EG_ERR); // Vérifie et avance le symbole courant
+        opRELOP = 1; // Stocke le code de l'opérateur d'égalité
+        break;
+    case DIFF_TOKEN: // Opérateur de différence '!='
+        Test_Symbole(DIFF_TOKEN, DIFF_ERR); // Vérifie et avance le symbole courant
+        opRELOP = 2; // Stocke le code de l'opérateur de différence
+        break;
+    case INF_TOKEN: // Opérateur d'infériorité '<'
+        Test_Symbole(INF_TOKEN, INF_ERR); // Vérifie et avance le symbole courant
+        opRELOP = 3; // Stocke le code de l'opérateur d'infériorité
+        break;
+    case SUP_TOKEN: // Opérateur de supériorité '>'
+        Test_Symbole(SUP_TOKEN, SUP_ERR); // Vérifie et avance le symbole courant
+        opRELOP = 4; // Stocke le code de l'opérateur de supériorité
+        break;
+    case INFEG_TOKEN: // Opérateur d'infériorité ou égalité '<='
+        Test_Symbole(INFEG_TOKEN, INFEG_ERR); // Vérifie et avance le symbole courant
+        opRELOP = 5; // Stocke le code de l'opérateur d'infériorité ou égalité
+        break;
+    case SUPEG_TOKEN: // Opérateur de supériorité ou égalité '>='
+        Test_Symbole(SUPEG_TOKEN, SUPEG_ERR); // Vérifie et avance le symbole courant
+        opRELOP = 6; // Stocke le code de l'opérateur de supériorité ou égalité
+        break;
+    default:
+        Erreur(ERREUR_ERR, "RELOP"); // Erreur si le symbole courant ne correspond à aucun opérateur de comparaison
+        break;
+    }
+}
+
+void ADDOP()
+{
+    // Analyse le symbole courant pour déterminer l'opérateur d'addition ou de soustraction
+    switch (SYM_COUR.CODE)
+    {
+    case PLUS_TOKEN: // Opérateur d'addition '+'
+        Test_Symbole(PLUS_TOKEN, PLUS_ERR); // Vérifie et avance le symbole courant
+        opADDOP = 1; // Stocke le code de l'opérateur d'addition
+        break;
+    case MOINS_TOKEN: // Opérateur de soustraction '-'
+        Test_Symbole(MOINS_TOKEN, MOINS_ERR); // Vérifie et avance le symbole courant
+        opADDOP = 2; // Stocke le code de l'opérateur de soustraction
+        break;
+    default:
+        Erreur(ERREUR_ERR, "ADDOP"); // Erreur si le symbole courant ne correspond à aucun opérateur d'addition ou de soustraction
+        break;
+    }
+}
+
+void MULOP()
+{
+    // Analyse le symbole courant pour déterminer l'opérateur de multiplication ou de division
+    switch (SYM_COUR.CODE)
+    {
+    case MULT_TOKEN: // Opérateur de multiplication '*'
+        Test_Symbole(MULT_TOKEN, MULT_ERR); // Vérifie et avance le symbole courant
+        opMULOP = 1; // Stocke le code de l'opérateur de multiplication
+        break;
+    case DIV_TOKEN: // Opérateur de division '/'
+        Test_Symbole(DIV_TOKEN, DIV_ERR); // Vérifie et avance le symbole courant
+        opMULOP = 2; // Stocke le code de l'opérateur de division
+        break;
+    default:
+        Erreur(ERREUR_ERR, "MULOP"); // Erreur si le symbole courant ne correspond à aucun opérateur de multiplication ou de division
+        break;
+    }
+}
+
+void POUR()
+{
+    Test_Symbole(FOR_TOKEN, FOR_ERR); // Vérifie et avance le symbole courant
+
+    // Définir une nouvelle variable en mémoire
+    strcpy(TABLESYM[IND_DER_SYM_ACC].NOM, SYM_COUR.NOM);
+    TABLESYM[IND_DER_SYM_ACC].CLASSE = ID_TOKEN;
+    int offset = ++OFFSET;
+    TABLESYM[IND_DER_SYM_ACC].ADRESSE = offset;
+    IND_DER_SYM_ACC++;
+
+    // Empiler l'adresse de cette nouvelle variable pour but d'affectation (Voir FACT())
+    GENERER2(LDA, offset);
+
+    // ID := EXPR
+    Test_Symbole(ID_TOKEN, ID_ERR); // Vérifie et avance le symbole courant
+    if (T_INTEGER_VAR != lastType) // Vérifie le type de la variable
+    {
+        printf("%s ----> Erreur:  Une constante ne peut changer de valeur dans le programme.", lastIdToken);
+        exit(EXIT_FAILURE);
+    }
+    Test_Symbole(AFF_TOKEN, AFF_ERR); // Vérifie et avance le symbole courant
+
+    // Stockage de la valeur initiale
+    GENERER2(LDI, SYM_COUR.val);
+    GENERER1(STO);
+
+    Test_Symbole(INTEGER_DATA_TOKEN, INTEGER_DATA_ERR); // Vérifie et avance le symbole courant
+
+    // Détermination de l'opération de boucle (DOWNTO ou INTO)
+    switch (SYM_COUR.CODE)
+    {
+    case DOWNTO_TOKEN: // Boucle DECOMPTER
+        Sym_Suiv();
+        opLoop = 1;
+        break;
+    case INTO_TOKEN: // Boucle INCREMENTER
+        Sym_Suiv();
+        opLoop = 2;
+        break;
+    default:
+        Erreur(ERREUR_ERR, "POUR");
+        break;
+    }
+
+    LABEL_BRN = PC + 1;
+
+    // Générer le code pour vérifier la condition de boucle
+    GENERER2(LDA, offset);
+    GENERER1(LDV);
+    GENERER2(LDI, SYM_COUR.val);
+    if (opLoop == 1)
+    {
+        GENERER2(LDI, -1);
+        GENERER1(ADD);
+    }
+    else if (opLoop == 2)
+    {
+        GENERER2(LDI, 1);
+        GENERER1(ADD);
+    }
+    GENERER1(NEQ);
+
+    Test_Symbole(INTEGER_DATA_TOKEN, INTEGER_DATA_ERR); // Vérifie et avance le symbole courant
+
+    GENERER1(BZE); // Sauter à la fin de la boucle si la condition n'est pas remplie
+    INDICE_BZE = PC;
+
+    Test_Symbole(DO_TOKEN, DO_ERR); // Vérifie et avance le symbole courant
+
+    INST(); // Analyser les instructions à exécuter dans la boucle
+
+    // Mettre à jour la variable de boucle
+    GENERER2(LDA, offset);
+    GENERER2(LDA, offset); // Double LDA car LDV écrase l'adresse et la remplace par sa valeur
+    GENERER1(LDV);
+    if (opLoop == 1)
+    {
+        GENERER2(LDI, -1);
+        GENERER1(ADD);
+    }
+    else if (opLoop == 2)
+    {
+        GENERER2(LDI, 1);
+        GENERER1(ADD);
+    }
+    GENERER1(STO);
+
+    // Sauter au début de la boucle pour une nouvelle itération
+    GENERER2(BRN, LABEL_BRN);
+
+    // Mettre à jour le saut conditionnel avec la nouvelle adresse de la fin de la boucle
+    PCODE[INDICE_BZE].SUITE = PC + 1;
+}
+
+// REPEAT_TOKEN,UNTIL_TOKEN,FOR_TOKEN,ELSE_TOKEN,CASE_TOKEN,OF_TOKEN
+void REPETER()
+{
+    LOOP_LOGIC = 1; // Indique que la condition est inversée (la boucle s'exécute au moins une fois)
+    Test_Symbole(REPEAT_TOKEN, REPEAT_ERR); // Vérifie et avance le symbole courant
+    LABEL_BRN = PC + 1; // Stocke l'adresse de départ de la boucle
+    INST(); // Analyse et exécute les instructions à l'intérieur de la boucle
+    Test_Symbole(UNTIL_TOKEN, UNTIL_ERR); // Vérifie le symbole de fin de boucle
+    COND(); // Analyse la condition de sortie de la boucle
+    GENERER1(BZE); // Sauter à la fin de la boucle si la condition est remplie
+    INDICE_BZE = PC; // Stocke l'adresse actuelle du code généré pour la condition
+    GENERER2(BRN, LABEL_BRN); // Sauter au début de la boucle pour une nouvelle itération
+    PCODE[INDICE_BZE].SUITE = PC + 1; // Met à jour le saut conditionnel avec la nouvelle adresse de fin de boucle
+}
+
+void CAS()
+{
+    Test_Symbole(CASE_TOKEN, CASE_ERR); // Vérifie et avance le symbole courant
+    Test_Symbole(ID_TOKEN, ID_ERR); // Vérifie et avance le symbole courant
+    Test_Symbole(OF_TOKEN, OF_TOKEN); // Vérifie et avance le symbole courant
+    Test_Symbole(INTEGER_DATA_TOKEN, INTEGER_DATA_ERR); // Vérifie et avance le symbole courant
+    Test_Symbole(DDOT_TOKEN, DDOT_ERR); // Vérifie et avance le symbole courant
+    INST(); // Analyse et exécute les instructions du cas
+    while (SYM_COUR.CODE == INTEGER_DATA_TOKEN) // Tant qu'il y a des valeurs de cas
+    {
+        Sym_Suiv(); // Avance au symbole suivant
+        Test_Symbole(DDOT_TOKEN, DDOT_ERR); // Vérifie et avance le symbole courant
+        INST(); // Analyse et exécute les instructions du cas
+    }
+    if (SYM_COUR.CODE == ELSE_TOKEN) // Si un cas par défaut est défini
+    {
+        Sym_Suiv(); // Avance au symbole suivant
+        INST(); // Analyse et exécute les instructions du cas par défaut
+    }
+    Test_Symbole(END_TOKEN, END_ERR); // Vérifie et avance le symbole courant
+}
+
+// Sauvegarder le code intermédiaire dans un fichier
+void SavePCodeToFile(FILE *FICH_SORTIE);
+void SavePCodeToFile(FILE *FICH_SORTIE)
+{
+    int i;
+    for (i = 0; i <= PC; i++) // Parcourt tous les éléments du code intermédiaire jusqu'à l'indice PC
+    {
+        SaveInstToFile(FICH_SORTIE, PCODE[i], i); // Appelle la fonction SaveInstToFile pour sauvegarder chaque instruction dans le fichier de sortie
+    }
+}
 
