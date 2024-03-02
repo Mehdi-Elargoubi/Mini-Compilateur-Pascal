@@ -629,3 +629,1220 @@ void lire_mot()
         strcpy(SYM_COUR.NOM, mot);
     }
 }
+
+// Cette fonction lit un nombre depuis le flux d'entrée caractère par caractère et le convertit en jeton.
+void lire_nombre()
+{
+    char nombre[32]; // Tableau pour stocker le nombre en tant que chaîne de caractères
+    int indice = 0; // Indice de position dans le tableau nombre
+    int isFloat = 0; // Variable pour indiquer si le nombre est un flottant
+
+    // Lecture du premier chiffre
+    nombre[indice++] = Car_Cour; // Stockage du premier caractère du nombre
+    Lire_Car(); // Lecture du caractère suivant
+
+    // Lecture des chiffres suivants et du point décimal (s'il y en a)
+    while (isdigit(Car_Cour) || Car_Cour == '.') // Tant que le caractère courant est un chiffre ou un point décimal
+    {
+        if (Car_Cour == '.') // Si le caractère courant est un point décimal
+        {
+            isFloat = 1; // Le nombre contient un point, donc c'est un flottant
+        }
+        nombre[indice++] = Car_Cour; // Stockage du chiffre ou du point décimal dans le tableau nombre
+        Lire_Car(); // Lecture du caractère suivant
+    }
+
+    // Ajout du caractère de fin de chaîne pour indiquer la fin du nombre
+    nombre[indice] = '\0';
+
+    // Stockage du nombre dans le jeton en fonction de son type (entier ou flottant)
+    if (isFloat)
+    {
+        SYM_COUR.CODE = FLOAT_DATA_TOKEN; // Définition du code du jeton comme flottant
+        SYM_COUR.val = atof(nombre); // Conversion de la chaîne en flottant et stockage dans le champ val du jeton
+    }
+    else
+    {
+        SYM_COUR.CODE = INTEGER_DATA_TOKEN; // Définition du code du jeton comme entier
+        SYM_COUR.val = atoi(nombre); // Conversion de la chaîne en entier et stockage dans le champ val du jeton
+    }
+
+    strcpy(SYM_COUR.NOM, nombre); // Copie du nombre converti dans le champ NOM du jeton
+}
+
+
+// Cette fonction gère la déclaration des types de variables et effectue les actions associées en fonction du type spécifié.
+void TYPE(int isIntitlized)
+{ 
+    Test_Symbole(DDOT_TOKEN, DDOT_ERR); // Vérifie si le symbole suivant est bien un double point (:), sinon génère une erreur
+
+    switch (SYM_COUR.CODE) // Commence le traitement en fonction du code du symbole courant
+    {
+    case FLOAT_TOKEN: // Si le type est flottant
+        Sym_Suiv(); // Avance au symbole suivant
+        if (isIntitlized) // Si la variable est initialisée
+        {
+            Test_Symbole(EG_TOKEN, EG_ERR); // Vérifie si le symbole suivant est bien un signe égal (=), sinon génère une erreur
+
+            // Empile la valeur lue (correspondant à NUM_TOKEN)
+            GENERER2(LDI, SYM_COUR.val); // Génère l'instruction pour charger la valeur dans la mémoire
+            GENERER1(STO); // Génère l'instruction pour stocker la valeur dans la mémoire
+
+            IND_DER_SYM_ACC++; // Incrémente l'index dans la table des symboles
+
+            Test_Symbole(FLOAT_DATA_TOKEN, FLOAT_DATA_ERR); // Vérifie si le symbole suivant est bien un flottant, sinon génère une erreur
+            Test_Symbole(PV_TOKEN, PV_ERR); // Vérifie si le symbole suivant est bien un point-virgule (;), sinon génère une erreur
+        }
+        break;
+    case INTEGER_TOKEN: // Si le type est entier
+        Sym_Suiv(); // Avance au symbole suivant
+        if (isIntitlized) // Si la variable est initialisée
+        {
+            Test_Symbole(EG_TOKEN, EG_ERR); // Vérifie si le symbole suivant est bien un signe égal (=), sinon génère une erreur
+
+            // Empile la valeur lue (correspondant à NUM_TOKEN)
+            GENERER2(LDI, SYM_COUR.val); // Génère l'instruction pour charger la valeur dans la mémoire
+            GENERER1(STO); // Génère l'instruction pour stocker la valeur dans la mémoire
+
+            IND_DER_SYM_ACC++; // Incrémente l'index dans la table des symboles
+
+            Test_Symbole(INTEGER_DATA_TOKEN, INTEGER_DATA_ERR); // Vérifie si le symbole suivant est bien un entier, sinon génère une erreur
+            Test_Symbole(PV_TOKEN, PV_ERR); // Vérifie si le symbole suivant est bien un point-virgule (;), sinon génère une erreur
+        }
+        break;
+    case BOOLEAN_TOKEN: // Si le type est booléen
+        Sym_Suiv(); // Avance au symbole suivant
+        if (isIntitlized) // Si la variable est initialisée
+        {
+            Test_Symbole(EG_TOKEN, EG_ERR); // Vérifie si le symbole suivant est bien un signe égal (=), sinon génère une erreur
+
+            GENERER2(LDI, SYM_COUR.val); // Empile la valeur lue (correspondant à NUM_TOKEN)
+            GENERER1(STO); // Génère l'instruction pour stocker la valeur dans la mémoire
+
+            IND_DER_SYM_ACC++; // Incrémente l'index dans la table des symboles
+
+            Test_Symbole(BOOLEAN_DATA_TOKEN, BOOLEAN_DATA_ERR); // Vérifie si le symbole suivant est bien un booléen, sinon génère une erreur
+            Test_Symbole(PV_TOKEN, PV_ERR); // Vérifie si le symbole suivant est bien un point-virgule (;), sinon génère une erreur
+        }
+        break;
+    case STRING_TOKEN: // Si le type est une chaîne de caractères
+        Sym_Suiv(); // Avance au symbole suivant
+        if (isIntitlized) // Si la variable est initialisée
+        {
+            Test_Symbole(EG_TOKEN, EG_ERR); // Vérifie si le symbole suivant est bien un signe égal (=), sinon génère une erreur
+
+            lire_string(); // Appel de la fonction pour lire une chaîne de caractères
+            Test_Symbole(STRING_DATA_TOKEN, STRING_DATA_ERR); // Vérifie si le symbole suivant est bien une chaîne de caractères, sinon génère une erreur
+
+            Test_Symbole(QMARK_TOKEN, QMARK_ERR); // Vérifie si le symbole suivant est bien un point d'interrogation (?), sinon génère une erreur
+            Test_Symbole(PV_TOKEN, PV_ERR); // Vérifie si le symbole suivant est bien un point-virgule (;), sinon génère une erreur
+        }
+        break;
+    case ARRAY_TOKEN: // Si le type est un tableau
+        Sym_Suiv(); // Avance au symbole suivant
+        if (isIntitlized) // Si la variable est initialisée
+        {
+            Test_Symbole(EG_TOKEN, EG_ERR); // Vérifie si le symbole suivant est bien un signe égal (=), sinon génère une erreur
+
+            Test_Symbole(SQUARE_BRACKET_OPEN_TOKEN, SQUARE_BRACKET_OPEN_ERR); // Vérifie si le symbole suivant est bien une parenthèse ouvrante ([), sinon génère une erreur
+            Test_Symbole(INTEGER_DATA_TOKEN, INTEGER_DATA_ERR); // Vérifie si le symbole suivant est bien un entier, sinon génère une erreur
+            while (SYM_COUR.CODE == VIR_TOKEN) // Tant que le symbole suivant est une virgule (,)
+            {
+                Sym_Suiv(); // Avance au symbole suivant
+                Test_Symbole(INTEGER_DATA_TOKEN, INTEGER_DATA_ERR); // Vérifie si le symbole suivant est bien un entier, sinon génère une erreur
+            }
+            Test_Symbole(SQUARE_BRACKET_CLOSE_TOKEN, SQUARE_BRACKET_CLOSE_ERR); // Vérifie si le symbole suivant est bien une parenthèse fermante (]), sinon génère une erreur
+
+            // Test_Symbole(ARRAY_DATA_TOKEN, ARRAY_DATA_ERR); // Vérifie si le symbole suivant est bien un jeton de données de tableau, sinon génère une erreur
+            Test_Symbole(PV_TOKEN, PV_ERR); // Vérifie si le symbole suivant est bien un point-virgule (;), sinon génère une erreur
+        }
+        break;
+    default: // Si aucun des cas précédents n'est rencontré
+        Erreur(VAR_BEGIN_ERR, "VARS"); // Génère une erreur indiquant une déclaration de variable incorrecte
+        break;
+    }
+}
+
+
+// Cette fonction vérifie la validité des identificateurs déclarés dans le programme et génère des erreurs si nécessaire.
+void Check()
+{
+    int r = 0; // Variable de contrôle pour vérifier si l'identificateur a déjà été déclaré
+    int i;
+
+    switch (current_region) // Commence le traitement en fonction de la région courante du programme
+    {
+    case RPROG: // Si la région courante est la région du programme principal
+        for (i = 0; i < k; ++i) // Parcourt la table des identificateurs déclarés
+        {
+            if (strcmp(SYM_COUR.NOM, TAB_IDFS[i].NOM) == 0) // Vérifie si l'identificateur courant est déjà présent dans la table
+            {
+                r = 1; // Indique que l'identificateur est déjà présent
+                break; // Sort de la boucle
+            }
+        }
+
+        if (r == 1) // Si l'identificateur est déjà présent dans la table
+        {
+            if (TPROG == TAB_IDFS[i].TIDF) // Si c'est le nom du programme principal
+            {
+                printf("%s ----> Erreur:  Le ID du programme ne peut être utilisé dans le programme.", SYM_COUR.NOM); // Affiche une erreur indiquant que le nom du programme principal ne peut pas être utilisé
+                exit(EXIT_FAILURE); // Termine le programme avec un code d'erreur
+            }
+            else
+            {
+                printf("%s ----> Erreur: PAS DE DOUBLE DECLARATIONS.", SYM_COUR.NOM); // Affiche une erreur indiquant qu'il ne peut y avoir de déclarations en double
+                exit(EXIT_FAILURE); // Termine le programme avec un code d'erreur
+            }
+        }
+        strcpy(TAB_IDFS[k].NOM, SYM_COUR.NOM); // Copie le nom de l'identificateur dans la table des identificateurs
+        TAB_IDFS[k].TIDF = TPROG; // Affecte le type du symbole à celui du programme principal
+        k++; // Incrémente l'indice de la table des identificateurs
+        break;
+
+    case RCONST: // Si la région courante est la région des constantes
+        for (i = 0; i < k; ++i) // Parcourt la table des identificateurs déclarés
+        {
+            if (strcmp(SYM_COUR.NOM, TAB_IDFS[i].NOM) == 0) // Vérifie si l'identificateur courant est déjà présent dans la table
+            {
+                r = 1; // Indique que l'identificateur est déjà présent
+                break; // Sort de la boucle
+            }
+        }
+
+        if (r == 1) // Si l'identificateur est déjà présent dans la table
+        {
+            if (TPROG == TAB_IDFS[i].TIDF) // Si c'est le nom du programme principal
+            {
+                printf("%s ----> Erreur:  Le ID du programme ne peut être utilisé dans le programme.", SYM_COUR.NOM); // Affiche une erreur indiquant que le nom du programme principal ne peut pas être utilisé
+                exit(EXIT_FAILURE); // Termine le programme avec un code d'erreur
+            }
+            else
+            {
+                printf("%s ----> Erreur: PAS DE DOUBLE DECLARATIONS.", SYM_COUR.NOM); // Affiche une erreur indiquant qu'il ne peut y avoir de déclarations en double
+                exit(EXIT_FAILURE); // Termine le programme avec un code d'erreur
+            }
+        }
+        else
+        {
+            strcpy(TAB_IDFS[k].NOM, SYM_COUR.NOM); // Copie le nom de l'identificateur dans la table des identificateurs
+            TAB_IDFS[k].TIDF = T_INTEGER_CONST; // Affecte le type du symbole à celui d'une constante entière
+            k++; // Incrémente l'indice de la table des identificateurs
+        }
+        break;
+
+    case RVAR: // Si la région courante est la région des variables
+        for (i = 0; i < k; ++i) // Parcourt la table des identificateurs déclarés
+        {
+            if (strcmp(SYM_COUR.NOM, TAB_IDFS[i].NOM) == 0) // Vérifie si l'identificateur courant est déjà présent dans la table
+            {
+                r = 1; // Indique que l'identificateur est déjà présent
+                break; // Sort de la boucle
+            }
+        }
+
+        if (r == 1) // Si l'identificateur est déjà présent dans la table
+        {
+            if (TPROG == TAB_IDFS[i].TIDF) // Si c'est le nom du programme principal
+            {
+                printf("%s ----> Erreur:  Le ID du programme ne peut être utilisé dans le programme.", SYM_COUR.NOM); // Affiche une erreur indiquant que le nom du programme principal ne peut pas être utilisé
+                exit(EXIT_FAILURE); // Termine le programme avec un code d'erreur
+            }
+            else
+            {
+                printf("%s ----> Erreur: PAS DE DOUBLE DECLARATIONS.", SYM_COUR.NOM); // Affiche une erreur indiquant qu'il ne peut y avoir de déclarations en double
+                exit(EXIT_FAILURE); // Termine le programme avec un code d'erreur
+            }
+        }
+        else
+        {
+            strcpy(TAB_IDFS[k].NOM, SYM_COUR.NOM); // Copie le nom de l'identificateur dans la table des identificateurs
+            TAB_IDFS[k].TIDF = T_INTEGER_VAR; // Affecte le type du symbole à celui d'une variable entière
+            k++; // Incrémente l'indice de la table des identificateurs
+        }
+        break;
+
+    case RBEGIN: // Si la région courante est la région du bloc de code
+        for (i = 0; i < k; ++i) // Parcourt la table des identificateurs déclarés
+        {
+            if (strcmp(SYM_COUR.NOM, TAB_IDFS[i].NOM) == 0) // Vérifie si l'identificateur courant est déjà présent dans la table
+            {
+                r = 1; // Indique que l'identificateur est déjà présent
+                break; // Sort de la boucle
+            }
+        }
+
+        if (r == 1) // Si l'identificateur est déjà présent dans la table
+        {
+            if (TPROG == TAB_IDFS[i].TIDF) // Si c'est le nom du programme principal
+            {
+                printf("%s ----> Erreur:  Le ID du programme ne peut être utilisé dans le programme.", SYM_COUR.NOM); // Affiche une erreur indiquant que le nom du programme principal ne peut pas être utilisé
+                exit(EXIT_FAILURE); // Termine le programme avec un code d'erreur
+            }
+        }
+        else
+        {
+            printf("%s ----> Erreur:  Tous les symboles doivent être déjà déclarés.", SYM_COUR.NOM); // Affiche une erreur indiquant que tous les symboles doivent être déjà déclarés
+            exit(EXIT_FAILURE); // Termine le programme avec un code d'erreur
+        }
+
+        if (isReadActivated) // Si l'activation de la lecture est activée
+        {
+            isReadActivated = 0; // Désactive l'activation de la lecture
+            if (T_INTEGER_CONST == TAB_IDFS[i].TIDF) // Si le type de l'identificateur est une constante entière
+            {
+                printf("%s ----> Erreur:  Une constante ne peut changer de valeur dans le programme.", SYM_COUR.NOM); // Affiche une erreur indiquant qu'une constante ne peut changer de valeur
+                exit(EXIT_FAILURE); // Termine le programme avec un code d'erreur
+            }
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    lastType = TAB_IDFS[i].TIDF; // Stocke le dernier type d'identificateur dans une variable globale
+    strcpy(lastIdToken, TAB_IDFS[i].NOM); // Copie le nom du dernier identificateur analysé dans une variable globale
+}
+
+
+// Cette fonction lit un caractère à partir du fichier en cours de lecture et le stocke dans la variable globale Car_Cour.
+void Lire_Car()
+{
+    Car_Cour = fgetc(fichier); // Utilise la fonction fgetc() pour lire un caractère à partir du fichier et le stocke dans Car_Cour
+}
+
+
+// Cette fonction analyse le caractère courant (Car_Cour) et détermine le symbole suivant en fonction de ce caractère.
+
+void Sym_Suiv()
+{
+    // Ignorer les espaces, les sauts de ligne et les tabulations
+    while (Car_Cour == ' ' || Car_Cour == '\n' || Car_Cour == '\t')
+    {
+        Lire_Car(); // Passer au caractère suivant
+    }
+
+    // Si le caractère est une lettre, appeler la fonction lire_mot() pour analyser le mot
+    if (isalpha(Car_Cour))
+    {
+        lire_mot();
+    }
+    // Si le caractère est un chiffre, appeler la fonction lire_nombre() pour analyser le nombre
+    else if (isdigit(Car_Cour))
+    {
+        lire_nombre();
+    }
+    else
+    {
+        // Sinon, déterminer le symbole suivant en fonction du caractère courant
+        switch (Car_Cour)
+        {
+        case '#':
+            // Gestion du commentaire de type #...#
+            Lire_Car(); // Passer au caractère suivant après le #
+            while (Car_Cour != '\n')
+            {
+                Lire_Car(); // Ignorer les caractères du commentaire
+            }
+            Lire_Car(); // Passer au caractère suivant après le commentaire
+            Sym_Suiv(); // Analyser le prochain symbole après le commentaire
+            break;
+        case '$':
+            // Gestion du commentaire de type $...$
+            Lire_Car(); // Passer au caractère suivant après le $
+            while (Car_Cour != '$')
+            {
+                Lire_Car(); // Ignorer les caractères du commentaire
+            }
+            Lire_Car(); // Passer au caractère suivant après le commentaire
+            Sym_Suiv(); // Analyser le prochain symbole après le commentaire
+            break;
+        case ';':
+            // Point-virgule
+            SYM_COUR.CODE = PV_TOKEN;
+            Lire_Car(); // Passer au caractère suivant
+            break;
+        case '+':
+            // Opérateur d'addition
+            SYM_COUR.CODE = PLUS_TOKEN;
+            Lire_Car(); // Passer au caractère suivant
+            break;
+        case '-':
+            // Opérateur de soustraction
+            SYM_COUR.CODE = MOINS_TOKEN;
+            Lire_Car(); // Passer au caractère suivant
+            break;
+        case '*':
+            // Opérateur de multiplication
+            SYM_COUR.CODE = MULT_TOKEN;
+            Lire_Car(); // Passer au caractère suivant
+            break;
+        case '/':
+            // Opérateur de division
+            SYM_COUR.CODE = DIV_TOKEN;
+            Lire_Car(); // Passer au caractère suivant
+            break;
+        case ',':
+            // Virgule
+            SYM_COUR.CODE = VIR_TOKEN;
+            Lire_Car(); // Passer au caractère suivant
+            break;
+        case ':':
+            Lire_Car(); // Passer au caractère suivant après le :
+            if (Car_Cour == '=')
+            {
+                // Opérateur d'affectation :=
+                SYM_COUR.CODE = AFF_TOKEN;
+                Lire_Car(); // Passer au caractère suivant après le =
+            }
+            else
+            {
+                // Deux points
+                SYM_COUR.CODE = DDOT_TOKEN;
+            }
+            break;
+        case '<':
+            Lire_Car(); // Passer au caractère suivant après le <
+            if (Car_Cour == '=')
+            {
+                // Opérateur "inférieur ou égal à" (<=)
+                SYM_COUR.CODE = INFEG_TOKEN;
+                Lire_Car(); // Passer au caractère suivant après le =
+            }
+            else if (Car_Cour == '>')
+            {
+                // Opérateur "différent de" (<>)
+                SYM_COUR.CODE = DIFF_TOKEN;
+                Lire_Car(); // Passer au caractère suivant après le >
+            }
+            else
+            {
+                // Opérateur "inférieur à" (<)
+                SYM_COUR.CODE = INF_TOKEN;
+            }
+            break;
+        case '>':
+            Lire_Car(); // Passer au caractère suivant après le >
+            if (Car_Cour == '=')
+            {
+                // Opérateur "supérieur ou égal à" (>=)
+                SYM_COUR.CODE = SUPEG_TOKEN;
+                Lire_Car(); // Passer au caractère suivant après le =
+            }
+            else
+            {
+                // Opérateur "supérieur à" (>)
+                SYM_COUR.CODE = SUP_TOKEN;
+            }
+            break;
+        case '(':
+            // Parenthèse ouvrante
+            SYM_COUR.CODE = PO_TOKEN;
+            Lire_Car(); // Passer au caractère suivant
+            break;
+        case '=':
+            // Opérateur d'égalité
+            SYM_COUR.CODE = EG_TOKEN;
+            Lire_Car(); // Passer au caractère suivant
+            break;
+        case ')':
+            // Parenthèse fermante
+            SYM_COUR.CODE = PF_TOKEN;
+            Lire_Car(); // Passer au caractère suivant
+            break;
+        case '.':
+            // Point
+            SYM_COUR.CODE = PT_TOKEN;
+            Lire_Car(); // Passer au caractère suivant
+            break;
+        case '"':
+            // Guillemet
+            SYM_COUR.CODE = QMARK_TOKEN;
+            Lire_Car(); // Passer au caractère suivant
+            break;
+        case '[':
+            // Crochet ouvrant
+            SYM_COUR.CODE = SQUARE_BRACKET_OPEN_TOKEN;
+            Lire_Car(); // Passer au caractère suivant
+            break;
+        case ']':
+            // Crochet fermant
+            SYM_COUR.CODE = SQUARE_BRACKET_CLOSE_TOKEN;
+            Lire_Car(); // Passer au caractère suivant
+            break;
+        case EOF:
+            // Fin de fichier
+            SYM_COUR.CODE = FIN_TOKEN;
+            break;
+        default:
+            // Si le caractère n'est associé à aucun symbole connu, signaler une erreur
+            SYM_COUR.CODE = ERREUR_TOKEN;
+            Lire_Car(); // Passer au caractère suivant
+        }
+        // Copier le caractère courant dans le nom du symbole (peut être utilisé pour les symboles d'un seul caractère)
+        strcpy(SYM_COUR.NOM, &Car_Cour);
+    }
+}
+
+
+void Erreur(CODES_ERR code, char *origin)
+{
+    // Affichage de l'erreur syntaxique avec son origine
+    printf("Syntaxic error: %s  + origin: %s\n", getErrorMessage(code), origin);
+    // Sortie du programme avec un code d'erreur
+    exit(EXIT_FAILURE);
+}
+
+// Fonctions de génération du P-CODE
+
+void GENERER1(MNEMONIQUES M)
+{
+    // Vérifier si le compteur de programme atteint la taille maximale
+    if (PC == TAILLECODE)
+    {
+        // Si oui, sortir du programme avec un code d'erreur
+        exit(EXIT_FAILURE);
+    }
+    // Incrémenter le compteur de programme
+    PC++;
+    // Affecter le mnémonique à la position actuelle du compteur de programme
+    PCODE[PC].MNE = M;
+}
+
+void GENERER2(MNEMONIQUES M, int A)
+{
+    // Vérifier si le compteur de programme atteint la taille maximale
+    if (PC == TAILLECODE)
+    {
+        // Si oui, sortir du programme avec un code d'erreur
+        exit(EXIT_FAILURE);
+    }
+    // Incrémenter le compteur de programme
+    PC++;
+    // Affecter le mnémonique et l'opérande à la position actuelle du compteur de programme
+    PCODE[PC].MNE = M;
+    PCODE[PC].SUITE = A;
+}
+
+
+//--------------- Interpreteur ---------------//
+
+void SaveInstToFile(FILE *FICH_SORTIE, INSTRUCTION INST, int i)
+{
+    // Sélection de l'action à effectuer en fonction du mnémonique de l'instruction
+    switch (INST.MNE)
+    {
+    case LDA:
+        // Écriture dans le fichier de sortie avec le mnémonique et l'opérande
+        fprintf(FICH_SORTIE, "%s \t %d \n", "LDA", INST.SUITE);
+        break;
+    case LDI:
+        fprintf(FICH_SORTIE, "%s \t %d \n", "LDI", INST.SUITE);
+        break;
+    case INT:
+        fprintf(FICH_SORTIE, "%s \t %d \n", "INT", INST.SUITE);
+        break;
+    case BZE:
+        fprintf(FICH_SORTIE, "%s \t %d \n", "BZE", INST.SUITE);
+        break;
+    case BRN:
+        fprintf(FICH_SORTIE, "%s \t %d \n", "BRN", INST.SUITE);
+        break;
+    case LDV:
+        fprintf(FICH_SORTIE, "%s \n", "LDV");
+        break;
+    case ADD:
+        fprintf(FICH_SORTIE, "%s \n", "ADD");
+        break;
+    case SUB:
+        fprintf(FICH_SORTIE, "%s \n", "SUB");
+        break;
+    case MUL:
+        fprintf(FICH_SORTIE, "%s \n", "MUL");
+        break;
+    case DIV:
+        fprintf(FICH_SORTIE, "%s \n", "DIV");
+        break;
+    case LEQ:
+        fprintf(FICH_SORTIE, "%s \n", "LEQ");
+        break;
+    case GEQ:
+        fprintf(FICH_SORTIE, "%s \n", "GEQ");
+        break;
+    case NEQ:
+        fprintf(FICH_SORTIE, "%s \n", "NEQ");
+        break;
+    case LSS:
+        fprintf(FICH_SORTIE, "%s \n", "LSS");
+        break;
+    case GTR:
+        fprintf(FICH_SORTIE, "%s \n", "GTR");
+        break;
+    case EQL:
+        fprintf(FICH_SORTIE, "%s \n", "EQL");
+        break;
+    case HLT:
+        fprintf(FICH_SORTIE, "%s \n", "HLT");
+        break;
+    case STO:
+        fprintf(FICH_SORTIE, "%s \n", "STO");
+        break;
+    case INN:
+        fprintf(FICH_SORTIE, "%s \n", "INN");
+        break;
+    case PRN:
+        fprintf(FICH_SORTIE, "%s \n", "PRN");
+        break;
+
+    default:
+        // En cas d'instruction non reconnue, afficher une erreur
+        Erreur(INST_PCODE_ERR, "SaveInstToFile");
+        break;
+    }
+}
+
+//---------------------------------------------//
+
+void INTER_PCODE()
+{
+    // Initialisation du compteur de programme
+    PC = 0;
+    
+    // Boucle d'exécution des instructions jusqu'à ce qu'une instruction HLT soit rencontrée
+    while (PCODE[PC].MNE != HLT)
+        INTER_INST(PCODE[PC]);
+}
+
+
+void INTER_INST(INSTRUCTION INST)
+{
+    int val1, adr, val2;
+    // Sélection de l'action à effectuer en fonction du mnémonique de l'instruction
+    switch (INST.MNE)
+    {
+    // Cas d'une instruction d'allocation de mémoire (INT)
+    case INT:
+        // Définit la valeur de l'offset et la position du pointeur de pile (SP) à partir de l'opérande de l'instruction
+        OFFSET = SP = INST.SUITE;
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de chargement d'une constante dans la pile (LDI)
+    case LDI:
+        // Place la valeur de l'opérande de l'instruction sur la pile
+        MEM[++SP] = INST.SUITE;
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de chargement d'une adresse dans la pile (LDA)
+    case LDA:
+        // Place l'adresse de l'opérande de l'instruction sur la pile
+        MEM[++SP] = INST.SUITE;
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de stockage (STO)
+    case STO:
+        // Récupère la valeur et l'adresse à partir de la pile
+        val1 = MEM[SP--];
+        adr = MEM[SP--];
+        // Stocke la valeur à l'adresse spécifiée
+        MEM[adr] = val1;
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de chargement d'une valeur (LDV)
+    case LDV:
+        // Récupère l'adresse à partir de la pile
+        adr = MEM[SP--];
+        // Place la valeur située à cette adresse sur la pile
+        MEM[++SP] = MEM[adr];
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de comparaison d'égalité (EQL)
+    case EQL:
+        // Récupère deux valeurs à partir de la pile
+        val1 = MEM[SP--];
+        val2 = MEM[SP--];
+        // Place le résultat de la comparaison sur la pile
+        MEM[++SP] = (val1 == val2);
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de comparaison inférieure ou égal (LEQ)
+    case LEQ:
+        // Récupère deux valeurs à partir de la pile
+        val2 = MEM[SP--];
+        val1 = MEM[SP--];
+        // Place le résultat de la comparaison sur la pile
+        MEM[++SP] = (val1 <= val2);
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de comparaison supérieure ou égal (GEQ)
+    case GEQ:
+        // Récupère deux valeurs à partir de la pile
+        val2 = MEM[SP--];
+        val1 = MEM[SP--];
+        // Place le résultat de la comparaison sur la pile
+        MEM[++SP] = (val1 >= val2);
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de comparaison inférieure (LSS)
+    case LSS:
+        // Récupère deux valeurs à partir de la pile
+        val2 = MEM[SP--];
+        val1 = MEM[SP--];
+        // Place le résultat de la comparaison sur la pile
+        MEM[++SP] = (val1 < val2);
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de comparaison supérieure (GTR)
+    case GTR:
+        // Récupère deux valeurs à partir de la pile
+        val2 = MEM[SP--];
+        val1 = MEM[SP--];
+        // Place le résultat de la comparaison sur la pile
+        MEM[++SP] = (val1 > val2);
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de comparaison de non-égalité (NEQ)
+    case NEQ:
+        // Récupère deux valeurs à partir de la pile
+        val2 = MEM[SP--];
+        val1 = MEM[SP--];
+        // Place le résultat de la comparaison sur la pile
+        MEM[++SP] = (val1 != val2);
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de lecture d'un entier depuis l'entrée standard (INN)
+    case INN:
+        // Lit un entier depuis l'entrée standard et le stocke à l'adresse spécifiée par l'opérande de l'instruction
+        scanf("%d", &val1);
+        adr = MEM[SP--];
+        MEM[adr] = val1;
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de lecture d'un flottant depuis l'entrée standard (INF)
+    case INF:
+        // Lit un flottant depuis l'entrée standard et le stocke à l'adresse spécifiée par l'opérande de l'instruction
+        scanf("%f", &val1);
+        adr = MEM[SP--];
+        MEM[adr] = val1;
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de saut si zéro (BZE)
+    case BZE:
+        // Si la valeur au sommet de la pile est égale à zéro, saute à l'instruction spécifiée par l'opérande de l'instruction
+        if (MEM[SP--] == 0)
+            PC = INST.SUITE;
+        else
+            // Sinon, passe à l'instruction suivante
+            PC++;
+        break;
+    // Cas d'une instruction de saut inconditionnel (BRN)
+    case BRN:
+        // Saut inconditionnel à l'instruction spécifiée par l'opérande de l'instruction
+        PC = INST.SUITE;
+        break;
+    // Cas d'une instruction d'arrêt (HLT)
+    case HLT:
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction d'addition (ADD)
+    case ADD:
+        // Récupère deux valeurs à partir de la pile, les additionne, et place le résultat sur la pile
+        val1 = MEM[SP--];
+        val2 = MEM[SP--];
+        MEM[++SP] = val1 + val2;
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de soustraction (SUB)
+    case SUB:
+        // Récupère deux valeurs à partir de la pile, les soustrait, et place le résultat sur la pile
+        val1 = MEM[SP--];
+        val2 = MEM[SP--];
+        MEM[++SP] = val1 - val2;
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de multiplication (MUL)
+    case MUL:
+        // Récupère deux valeurs à partir de la pile, les multiplie, et place le résultat sur la pile
+        val1 = MEM[SP--];
+        val2 = MEM[SP--];
+        MEM[++SP] = val1 * val2;
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction de division (DIV)
+    case DIV:
+        // Récupère deux valeurs à partir de la pile, les divise, et place le résultat sur la pile
+        val1 = MEM[SP--];
+        val2 = MEM[SP--];
+        MEM[++SP] = val1 / val2;
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    // Cas d'une instruction d'affichage (PRN)
+    case PRN:
+        // Affiche la valeur au sommet de la pile
+        printf("%d\n", MEM[SP--]);
+        // Passe à l'instruction suivante
+        PC++;
+        break;
+    }
+
+}
+
+
+void Test_Symbole(CODES_LEX cl, CODES_ERR COD_ERR)
+{
+    // Vérifie si le symbole courant correspond au code lexial attendu
+    if (SYM_COUR.CODE == cl)
+    {
+        // Avance au symbole suivant
+        Sym_Suiv();
+    }
+    else
+        // En cas d'erreur, génère une erreur avec le code d'erreur spécifié
+        Erreur(COD_ERR, "Test_Symbole");
+}
+
+void PROGRAM()
+{
+    // Vérifie le symbole de programme et avance au symbole suivant
+    Test_Symbole(PROGRAM_TOKEN, PROGRAM_ERR);
+    // Définit la région courante comme la région du programme
+    current_region = RPROG;
+    // Vérifie le symbole d'identificateur et avance au symbole suivant
+    Test_Symbole(ID_TOKEN, ID_ERR);
+    // Vérifie le point-virgule et avance au symbole suivant
+    Test_Symbole(PV_TOKEN, PV_ERR);
+    // Appel de la fonction pour traiter le bloc principal
+    BLOCK();
+    // Génère une instruction d'arrêt (HALT) dans le code P
+    GENERER1(HLT);
+    // Vérifie le point (.) et avance au symbole suivant
+    Test_Symbole(PT_TOKEN, PT_ERR);
+}
+
+void BLOCK()
+{
+    // Définit la région courante comme la région des constantes
+    current_region = RCONST;
+    // Appel de la fonction pour traiter les constantes
+    CONSTS();
+    // Définit la région courante comme la région des variables
+    current_region = RVAR;
+    // Appel de la fonction pour traiter les variables
+    VARS();
+    // Définit la région courante comme la région du début
+    current_region = RBEGIN;
+    // Initialise le code P avec une instruction d'allocation de mémoire (INT) et une taille spécifiée
+    PCODE[0].MNE = INT;
+    PCODE[0].SUITE = 10;
+    // Appel de la fonction pour traiter les instructions
+    INSTS();
+}
+
+//----------------------
+void CONSTS()
+{
+    // Commence par vérifier le type de symbole courant
+    switch (SYM_COUR.CODE)
+    {
+    case CONST_TOKEN:
+        // Si le symbole courant est une constante, on avance au prochain symbole
+        Sym_Suiv();
+
+        // Définit une nouvelle constante en mémoire avec son adresse
+        TABLESYM[IND_DER_SYM_ACC].CLASSE = ID_TOKEN;
+        strcpy(TABLESYM[IND_DER_SYM_ACC].NOM, SYM_COUR.NOM);
+        TABLESYM[IND_DER_SYM_ACC].ADRESSE = ++OFFSET;
+
+        // Génère une instruction de chargement de l'adresse de la constante
+        GENERER2(LDA, TABLESYM[IND_DER_SYM_ACC].ADRESSE);
+
+        // Vérifie le symbole d'identificateur et le type de la constante
+        Test_Symbole(ID_TOKEN, ID_ERR);
+        TYPE(1);
+
+        // Continue à définir de nouvelles constantes jusqu'à la fin de la liste
+        while (SYM_COUR.CODE == ID_TOKEN)
+        {
+            // Définit une nouvelle constante en mémoire avec son adresse
+            TABLESYM[IND_DER_SYM_ACC].CLASSE = ID_TOKEN;
+            strcpy(TABLESYM[IND_DER_SYM_ACC].NOM, SYM_COUR.NOM);
+            TABLESYM[IND_DER_SYM_ACC].ADRESSE = ++OFFSET;
+
+            // Génère une instruction de chargement de l'adresse de la constante
+            GENERER2(LDA, TABLESYM[IND_DER_SYM_ACC].ADRESSE);
+
+            // Avance au prochain symbole et vérifie son type
+            Sym_Suiv();
+            TYPE(1);
+        };
+        break;
+    case VAR_TOKEN:
+        // Cas où il n'y a pas de constantes déclarées, on passe au traitement des variables
+        break;
+    case BEGIN_TOKEN:
+        // Cas où il n'y a pas de constantes ni de variables déclarées, on passe au bloc principal
+        break;
+    default:
+        // En cas d'erreur, génère une erreur avec le code d'erreur spécifié
+        Erreur(CONST_VAR_BEGIN_ERR, "CONSTS");
+        break;
+    }
+}
+
+void VARS()
+{
+    // Commence par vérifier le type de symbole courant
+    switch (SYM_COUR.CODE)
+    {
+    case VAR_TOKEN:
+        // Si le symbole courant est une variable, on avance au prochain symbole
+        Sym_Suiv();
+
+        // Vérifie le symbole d'identificateur et son type
+        Test_Symbole(ID_TOKEN, ID_ERR);
+        TYPE(0);
+
+        // Continue à définir de nouvelles variables jusqu'à la fin de la liste
+        while (SYM_COUR.CODE == VIR_TOKEN)
+        {
+            // Avance au prochain symbole
+            Sym_Suiv();
+            // Vérifie le symbole d'identificateur et son type
+            Test_Symbole(ID_TOKEN, ID_ERR);
+            TYPE(0);
+        }
+
+        // Vérifie le point-virgule indiquant la fin de la déclaration des variables
+        Test_Symbole(PV_TOKEN, PV_ERR);
+        break;
+    case BEGIN_TOKEN:
+        // Cas où il n'y a pas de variables déclarées, on passe au bloc principal
+        break;
+    default:
+        // En cas d'erreur, génère une erreur avec le code d'erreur spécifié
+        Erreur(VAR_BEGIN_ERR, "VARS");
+        break;
+    }
+}
+
+//----------------------
+
+
+void INSTS()
+{
+    // Vérifie si le bloc commence par le mot-clé BEGIN
+    if (SYM_COUR.CODE == BEGIN_TOKEN)
+    {
+        Sym_Suiv(); // Avance au prochain symbole
+
+        // Traite les instructions dans le bloc
+        INST();
+
+        // Continue à traiter les instructions séparées par des points-virgules
+        while (SYM_COUR.CODE == PV_TOKEN)
+        {
+            Sym_Suiv(); // Avance au prochain symbole
+            INST(); // Traite l'instruction suivante
+        }
+
+        // Vérifie si le bloc se termine par le mot-clé END
+        if (SYM_COUR.CODE == END_TOKEN)
+        {
+            Sym_Suiv(); // Avance au prochain symbole
+            // Le bloc est terminé avec succès
+        }
+        else
+        {
+            // Erreur : le bloc doit se terminer par END
+            Erreur(FIN_ERR, "INSTS");
+        }
+    }
+    else
+    {
+        // Erreur : le bloc doit commencer par BEGIN
+        Erreur(BEGIN_ERR, "INSTS");
+    }
+}
+
+void INST()
+{
+    // Traite les différentes instructions possibles
+    switch (SYM_COUR.CODE)
+    {
+    case BEGIN_TOKEN:
+        // Cas où l'instruction est un bloc d'instructions
+        INSTS();
+        break;
+    case ID_TOKEN:
+        // Cas où l'instruction est une affectation
+        AFFEC();
+        break;
+    case IF_TOKEN:
+        // Cas où l'instruction est une instruction conditionnelle SI
+        SI();
+        break;
+    case WHILE_TOKEN:
+        // Cas où l'instruction est une boucle TANT QUE
+        TANTQUE();
+        break;
+    case ECRIRE_LN_TOKEN:
+    case WRITE_TOKEN:
+        // Cas où l'instruction est une instruction d'affichage ECRIRE
+        ECRIRE();
+        break;
+    case READ_LN_TOKEN:
+    case READ_TOKEN:
+        // Cas où l'instruction est une instruction de lecture LIRE
+        LIRE();
+        break;
+    case REPEAT_TOKEN:
+        // Cas où l'instruction est une boucle REPETER
+        REPETER();
+        break;
+    case FOR_TOKEN:
+        // Cas où l'instruction est une boucle POUR
+        POUR();
+        break;
+    case CASE_TOKEN:
+        // Cas où l'instruction est une instruction CASE
+        CAS();
+        break;
+    default:
+        break;
+    }
+}
+
+void AFFEC()
+{
+    int i;
+    int exists = 0;
+
+    // Vérifie si la variable existe déjà dans la table des symboles
+    for (i = 0; i < TABLEINDEX; i++)
+    {
+        if (strcmp(TABLESYM[i].NOM, SYM_COUR.NOM) == 0)
+        {
+            // Empile l'adresse de la variable trouvée
+            GENERER2(LDA, TABLESYM[i].ADRESSE);
+            exists = 1;
+            break;
+        }
+    }
+
+    if (!exists)
+    {
+        // Si la variable n'existe pas, la déclare et lui attribue une adresse
+        strcpy(TABLESYM[IND_DER_SYM_ACC].NOM, SYM_COUR.NOM);
+        TABLESYM[IND_DER_SYM_ACC].CLASSE = ID_TOKEN;
+        TABLESYM[IND_DER_SYM_ACC].ADRESSE = ++OFFSET;
+        // Empile l'adresse de la nouvelle variable pour l'affectation
+        GENERER2(LDA, TABLESYM[IND_DER_SYM_ACC].ADRESSE);
+        IND_DER_SYM_ACC++;
+    }
+
+    // Traite l'expression après le signe :=
+    Test_Symbole(ID_TOKEN, ID_ERR); // Vérifie le symbole d'identificateur
+    if (T_INTEGER_VAR != lastType)
+    {
+        printf("%s ----> Erreur:  Une constante ne peut changer de valeur dans le programme.", lastIdToken);
+        exit(EXIT_FAILURE);
+    }
+    Test_Symbole(AFF_TOKEN, AFF_ERR); // Vérifie le signe :=
+    EXPR(); // Traite l'expression à affecter à la variable
+    // Stocke la valeur au sommet de la pile dans l'adresse indiquée au sous-sommet
+    GENERER1(STO);
+}
+
+void SI()
+{
+    // Vérifie si le symbole courant est IF
+    Test_Symbole(IF_TOKEN, IF_ERR);
+
+    // Traite la condition de l'instruction SI
+    COND();
+
+    // Génère une instruction de branchement si la condition est fausse
+    GENERER1(BZE);
+    IND_BZE = PC;
+
+    // Vérifie si le symbole courant est THEN
+    Test_Symbole(THEN_TOKEN, THEN_ERR);
+
+    // Traite l'instruction suivant le THEN
+    INST();
+
+    // Génère une instruction de branchement inconditionnel pour sortir du bloc SI
+    GENERER1(BRN);
+    INDICE_BRN = PC;
+
+    // Met à jour l'instruction de branchement si une clause ELSE est présente
+    PCODE[IND_BZE].SUITE = PC + 1;
+
+    // Vérifie si le symbole courant est ELSE
+    if (SYM_COUR.CODE == ELSE_TOKEN)
+    {
+        Sym_Suiv(); // Avance au prochain symbole
+        // Traite l'instruction suivant le ELSE
+        INST();
+        // Met à jour l'instruction de branchement pour sortir du bloc SI
+        PCODE[INDICE_BRN].SUITE = PC + 1;
+    }
+}
+
+void TANTQUE()
+{
+    // Vérifie si le symbole courant est WHILE
+    Test_Symbole(WHILE_TOKEN, WHILE_ERR);
+
+    // Étiquette de branchement pour revenir à la condition du TANTQUE
+    LABEL_BRN = PC + 1;
+
+    // Traite la condition de la boucle TANTQUE
+    COND();
+
+    // Génère une instruction de branchement si la condition est fausse
+    GENERER1(BZE);
+    INDICE_BZE = PC;
+
+    // Vérifie si le symbole courant est DO
+    Test_Symbole(DO_TOKEN, DO_ERR);
+
+    // Traite les instructions dans la boucle TANTQUE
+    INST();
+
+    // Génère une instruction de branchement inconditionnel pour retourner à la condition du TANTQUE
+    GENERER2(BRN, LABEL_BRN);
+
+    // Met à jour l'instruction de branchement si la condition est fausse
+    PCODE[INDICE_BZE].SUITE = PC + 1;
+}
+
+void ECRIRE()
+{
+    // Avance au prochain symbole (après ECRIRE)
+    Sym_Suiv();
+
+    // Vérifie si le symbole courant est (
+    Test_Symbole(PO_TOKEN, PO_ERR);
+
+    // Traite l'expression à afficher
+    EXPR();
+
+    // Génère une instruction de sortie
+    GENERER1(PRN);
+
+    // Traite les autres expressions séparées par des virgules
+    while (SYM_COUR.CODE == VIR_TOKEN)
+    {
+        Sym_Suiv(); // Avance au prochain symbole
+        EXPR(); // Traite l'expression suivante
+        GENERER1(PRN); // Génère une instruction de sortie pour cette expression
+    }
+
+    // Vérifie si le symbole courant est )
+    Test_Symbole(PF_TOKEN, PF_ERR);
+}
+
+void LIRE()
+{
+    // Avance au prochain symbole (après LIRE)
+    Sym_Suiv();
+
+    // Vérifie si le symbole courant est (
+    Test_Symbole(PO_TOKEN, PO_ERR);
+
+    // Parcourt la table des symboles pour trouver les adresses des variables à lire
+    int i;
+    int exists = 0;
+    for (i = 0; i < TABLEINDEX; i++)
+    {
+        // Si le nom de la variable est trouvé dans la table des symboles
+        if (strcmp(TABLESYM[i].NOM, SYM_COUR.NOM) == 0)
+        {
+            // Empile l'adresse de la variable trouvée
+            GENERER2(LDA, TABLESYM[i].ADRESSE);
+            exists = 1;
+            break;
+        }
+    }
+
+    // Si la variable n'existe pas, la déclare et lui assigne une adresse
+    if (exists == 0)
+    {
+        strcpy(TABLESYM[IND_DER_SYM_ACC].NOM, SYM_COUR.NOM);
+        TABLESYM[IND_DER_SYM_ACC].CLASSE = ID_TOKEN;
+        TABLESYM[IND_DER_SYM_ACC].ADRESSE = ++OFFSET;
+
+        GENERER2(LDA, TABLESYM[IND_DER_SYM_ACC].ADRESSE);
+
+        IND_DER_SYM_ACC++;
+    }
+
+    // Lit un entier depuis l'entrée standard et le stocke à l'adresse du sommet de la pile
+    GENERER1(INN);
+
+    // Vérifie si le symbole courant est un identificateur
+    Test_Symbole(ID_TOKEN, ID_ERR);
+
+    // Lit les valeurs des autres variables séparées par des virgules
+    while (SYM_COUR.CODE == VIR_TOKEN)
+    {
+        Sym_Suiv(); // Avance au prochain symbole
+
+        // Parcourt la table des symboles pour trouver les adresses des variables à lire
+        int i;
+        int exists = 0;
+        for (i = 0; i < TABLEINDEX; i++)
+        {
+            // Si le nom de la variable est trouvé dans la table des symboles
+            if (strcmp(TABLESYM[i].NOM, SYM_COUR.NOM) == 0)
+            {
+                // Empile l'adresse de la variable trouvée
+                GENERER2(LDA, TABLESYM[i].ADRESSE);
+                exists = 1;
+                break;
+            }
+        }
+
+        // Si la variable n'existe pas, la déclare et lui assigne une adresse
+        if (exists == 0)
+        {
+            strcpy(TABLESYM[IND_DER_SYM_ACC].NOM, SYM_COUR.NOM);
+            TABLESYM[IND_DER_SYM_ACC].CLASSE = ID_TOKEN;
+            TABLESYM[IND_DER_SYM_ACC].ADRESSE = ++OFFSET;
+
+            GENERER2(LDA, TABLESYM[IND_DER_SYM_ACC].ADRESSE);
+
+            IND_DER_SYM_ACC++;
+        }
+
+        // Lit un entier depuis l'entrée standard et le stocke à l'adresse du sommet de la pile
+        GENERER1(INN);
+
+        // Vérifie si le symbole courant est un identificateur
+        Test_Symbole(ID_TOKEN, ID_ERR);
+    }
+
+    // Vérifie si le symbole courant est )
+    Test_Symbole(PF_TOKEN, PF_ERR);
+}
+
+
